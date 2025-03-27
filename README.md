@@ -9,6 +9,7 @@ These binaries do not contain every function in the library (the *Gormiti* maps 
 ## Building
 
 ### Prerequisites
+- [`mkdir`](https://en.wikipedia.org/wiki/mkdir) that supports the `-p` flag
 - [Make](https://en.wikipedia.org/wiki/Make_(software))
 - Metrowerks Wii 1.0 Toolchain
 	- `mwcceppc.exe` (*version 4.3, build 145*)
@@ -22,7 +23,7 @@ In the makefile, set the `MWERKS` variable to the path of `mwcceppc.exe` (and `W
 Then run
 - `make wpad` to create `lib/wpad.a`,
 - `make wpadD` to create `lib/wpadD.a`, or
-- `make build/`(`release`/`debug`)`/<file>.o` to compile a specific file, if you're playing around with the source.
+- `make build/`(`release`/`debug`)`/<file>.o` to compile a specific file, if you're playing around with the source. For example, to compile the release version of `source/WPAD.c`, run `make build/release/WPAD.o`.
 - `make clean` comes included.
 
 ## Porting to a decompilation
