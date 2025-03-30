@@ -427,7 +427,7 @@ typedef struct /* possibly untagged, like kpad */
 	char unsigned			unk_0xbbc;						// size 0x001, offset 0xbbc	/* unknown */ // related to VSM
 	byte_t					__pad2[3]; /* unknown (can't be alignment) */
 	byte_t					extDataBuf[32];					// size 0x020, offset 0xbc0
-} wpad_cb_st; // size 0xbe0
+} __attribute__((aligned(0x20))) wpad_cb_st; // size 0xbe0
 
 /*******************************************************************************
  * external variables

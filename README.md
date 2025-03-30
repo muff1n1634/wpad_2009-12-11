@@ -40,7 +40,7 @@ Integrating this library into your decomp's build system is going to be specific
 
 By its nature, matching decompilation *has* a finish line, and this source is almost there. The few remaining unmatched functions in this repository are
 
-- [ ] `WPAD.c`: `__wpadInitSub` (optimization stuff?)
+- [x] ~~`WPAD.c`: `__wpadInitSub` (optimization stuff?)~~
 - [ ] `lint.c`: `LINTMul` (64 bit math)
 - [ ] `WUD.c`: `__wudWritePatch` (inlining shenanigans)
 
