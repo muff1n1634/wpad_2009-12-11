@@ -63,6 +63,11 @@ WPADResult WPADWriteExtReg(WPADChannel chan, const void *data, u16 length,
                            WPADExtRegType extReg, u16 address,
                            WPADCallback *cb);
 
+// TODO: sort
+
+WPADResult WPADReadExtReg(WPADChannel chan, void *data, u16 length,
+                          WPADExtRegType extReg, u16 address, WPADCallback *cb);
+
 #ifdef __cplusplus
 	}
 #endif

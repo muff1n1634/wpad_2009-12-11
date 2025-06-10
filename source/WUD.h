@@ -252,6 +252,12 @@ void WUDiSetNotAckNumForHandle(UINT8 dev_handle, u16 count);
 u16 WUDiGetNotAckNumForHandle(UINT8 dev_handle);
 void WUDiShowFatalErrorMessage(void);
 
+// TODO: sort
+
+BOOL WUDIsRegisteredWbc();
+s8 _WUDGetSyncType(WUDDevHandle devHandle);
+void WUDRegisterWbcBuf(void *workArea);
+
 #ifdef __cplusplus
 	}
 #endif

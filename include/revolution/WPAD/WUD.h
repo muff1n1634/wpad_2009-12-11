@@ -116,6 +116,15 @@ void WUDSetDeviceHistory(WUDChannel chan, BD_ADDR addr);
 BOOL WUDIsLatestDevice(WUDChannel chan, BD_ADDR addr);
 void WUDUpdateSCSetting(void);
 
+// TODO: sort
+BOOL WUDStartFastSyncDevice(void);
+BOOL WUDStartSyncSimple(void);
+int WUDGetRegisteredDevNum(void);
+int WUDGetTemporaryDevNum(void);
+WUDSyncDeviceCallback *WUDSetSyncDeviceCallback(WUDSyncDeviceCallback *cb);
+WUDClearDeviceCallback *WUDSetClearDeviceCallback(WUDClearDeviceCallback *cb);
+u32 WUDGetAllocatedMemSize(void);
+
 #ifdef __cplusplus
 	}
 #endif

@@ -12,6 +12,7 @@
 #include "lint.h" // ULONG
 #include "WPADHIDParser.h" // RPT_MAX_SIZE
 #include "WPADMem.h"
+#include "WUD.h" // WUDDevHandle
 
 #if 0
 #include <revolution/OS/OSTime.h>
@@ -26,7 +27,7 @@
 
 // WPADStatusEx is the largest WPADStatus variant (size 0x5a)
 // 0x20 is an arbitrary power of 2 that rounds up to 0x60
-#define RX_BUFFER_SIZE					ROUND_UP(sizeof(WPADStatusEx), 0x20)
+#define RX_BUFFER_SIZE					ROUND_UP(sizeof(WPADStatusEx), 32)
 
 #define WPAD_CONFIG_BLOCK_CHECKSUM_BIAS	0x55
 #define WPAD_MAX_CONFIG_BLOCKS			2
@@ -226,20 +227,6 @@ struct WPADCmdQueue
 	u32				length;		// size 0x04, offset 0x08
 }; // size 0x0c
 
-struct WPADMplsCalibration
-{
-	f32	pitchZero;	// size 0x04, offset 0x00
-	f32	pitchScale;	// size 0x04, offset 0x04
-
-	f32	yawZero;	// size 0x04, offset 0x08
-	f32	yawScale;	// size 0x04, offset 0x0c
-
-	f32	rollZero;	// size 0x04, offset 0x10
-	f32	rollScale;	// size 0x04, offset 0x14
-
-	s32	degrees;	// size 0x04, offset 0x18
-}; // size 0x1c
-
 struct WPADDevConfig
 {
 	DPDObject	dpd[WPAD_MAX_DPD_OBJECTS];	// size 0x20, offset 0x00
@@ -254,7 +241,7 @@ struct WPADDevConfig
 
 	u8			motor;						// size 0x01, offset 0x2c
 	u8			volume;						// size 0x01, offset 0x2d
-	byte_t		__pad0[2]; // padding to 0x30?
+	byte_t		pad0_[2]; // padding to 0x30?
 }; // size 0x30
 
 struct WPADExtConfig
@@ -299,15 +286,15 @@ struct WPADExtConfig
 			u8	triggerRZero;	// size 0x01, offset 0x19
 		} cl; // size 0x1a
 
-		byte_t FORCE_UNION_SIZE[0x1c]; // alignment?
+		byte_t forceUnionSize_[0x1c]; // alignment?
 	}; // size 0x1c
 
 	struct WPADMplsConfig
 	{
-		struct WPADMplsCalibration	high;		// size 0x1c, offset 0x00
-		struct WPADMplsCalibration	low;		// size 0x1c, offset 0x1c
-		u32							calibCRC;	// size 0x04, offset 0x38
-		u16							calibID;	// size 0x02, offset 0x3c
+		WPADMplsCalibration	high;		// size 0x1c, offset 0x00
+		WPADMplsCalibration	low;		// size 0x1c, offset 0x1c
+		u32					calibCRC;	// size 0x04, offset 0x38
+		u16					calibID;	// size 0x02, offset 0x3c
 		// 2 bytes padding (alignment? probably)
 	} mpls; // size 0x40, offset 0x01a
 }; // size 0x5c
@@ -316,15 +303,15 @@ struct WPADExtConfig
 typedef struct /* possibly untagged, like kpad */
 {
 	WPADGameInfo			gameInfo;						// size 0x038, offset 0x000
-	long signed				at_0x038[2];					// size 0x008, offset 0x038	/* unknown */ // WPADResult[2]? see __wpadGetGameInfo
+	long signed				unk_0x038[2];					// size 0x008, offset 0x038	/* unknown */ // WPADResult[2]? see __wpadGetGameInfo
 	byte_t					rxBufMain[RX_BUFFER_SIZE];		// size 0x060, offset 0x040
 	byte_t					rxBufs[2][RX_BUFFER_SIZE];		// size 0x060, offset 0x0a0
 	struct WPADCmdQueue		stdCmdQueue;					// size 0x00c, offset 0x160
 	struct WPADCmd			stdCmdQueueList[24];			// size 0x480, offset 0x16c
 	struct WPADCmdQueue		extCmdQueue;					// size 0x00c, offset 0x5ec
 	struct WPADCmd			extCmdQueueList[12];			// size 0x240, offset 0x16c
-	WPADInfo				wpInfo; 						// size 0x018, offset 0x838
-	WPADInfo				*wpInfoOut;						// size 0x004, offset 0x850
+	WPADInfo				info; 							// size 0x018, offset 0x838
+	WPADInfo				*infoOut;						// size 0x004, offset 0x850
 	struct WPADDevConfig	devConfig;						// size 0x030, offset 0x854
 	struct WPADExtConfig	extConfig;						// size 0x05c, offset 0x884
 	WPADCallback			*cmdBlkCB;						// size 0x004, offset 0x8e0
@@ -337,7 +324,7 @@ typedef struct /* possibly untagged, like kpad */
 	WPADDataFormat			dataFormat;						// size 0x004, offset 0x8fc
 	WPADResult				status;							// size 0x004, offset 0x900	/* name known from asserts */
 	u8						statusReqBusy;					// size 0x001, offset 0x904
-	u8						devType;						// size 0x001, offset 0x905	/* possible name from assert */
+	u8						devType;						// size 0x001, offset 0x905	/* name known from asserts */
 	u8						devMode;						// size 0x001, offset 0x906
 	WUDDevHandle			devHandle;						// size 0x001, offset 0x907
 	int signed				unk_0x908;						// size 0x001, offset 0x908	/* unknown */
@@ -350,12 +337,12 @@ typedef struct /* possibly untagged, like kpad */
 	u8						radioQualityOkMs;				// size 0x001, offset 0x912	// see __wpadCalcRadioQuality
 	u8						audioFrames;					// size 0x001, offset 0x913	/* name known from asserts */
 	u32						motorBusy;						// size 0x004, offset 0x914
-	BOOL					motorRunning;					// size 0x004, offset 0x918	// signedness known (yes)
+	BOOL					motorRunning;					// size 0x004, offset 0x918
 	BOOL					used;							// size 0x004, offset 0x91c	/* name known from asserts */
 	BOOL					handshakeFinished;				// size 0x004, offset 0x920
 	int						configIndex;					// size 0x004, offset 0x924
 	OSThreadQueue			threadQueue;					// size 0x008, offset 0x928	/* purpose unknown */
-	byte_t					__pad0[4]; /* unknown (can't be alignment) */
+	WPADCallback			*vsmCallback;					// size 0x004, offset 0x930
 	u8						controlMplsBusy;				// size 0x001, offset 0x934
 	byte_t					mplsCBReadBuf[2];				// size 0x002, offset 0x935
 	u8						mplsCBCounter;					// size 0x001, offset 0x937	// idk???
@@ -401,7 +388,7 @@ typedef struct /* possibly untagged, like kpad */
 	WPADCallback			*getInfoCB;						// size 0x004, offset 0xb80
 	u8						getInfoBusy;					// size 0x001, offset 0xb84
 	u8						extState;						// size 0x001, offset 0xb85
-	u8						disableContReport;				// size 0x001, offset 0xb86
+	u8						savePower;						// size 0x001, offset 0xb86
 	u8						blcBattery;						// size 0x001, offset 0xb87
 	u8						savedDevType;					// size 0x001, offset 0xb88	// maybe?
 	u8						extWasDisconnected;				// size 0x001, offset 0xb89
@@ -416,7 +403,7 @@ typedef struct /* possibly untagged, like kpad */
 	WPADMplsCBState			mplsCBState;					// size 0x001, offset 0xbac
 	u8						mplsUptimeMs;					// size 0x001, offset 0xbad
 	s8						certMayVerifyByCalibBlock;		// size 0x001, offset 0xbae
-	byte_t					__pad1[2]; /* unknown (can't be alignment) */
+	byte_t					pad0_[2]; /* unknown (can't be alignment) */
 	u8						certProbeStartingValue;			// size 0x001, offset 0xbb1
 	u16						lastMplsCalibID;				// size 0x002, offset 0xbb2
 	u32						lastMplsCalibCRC;				// size 0x004, offset 0xbb4
@@ -424,10 +411,11 @@ typedef struct /* possibly untagged, like kpad */
 	s8						extErr;							// size 0x001, offset 0xbb9
 	u8						extDataLength;					// size 0x001, offset 0xbba
 	u8						extDevType;						// size 0x001, offset 0xbbb
-	char unsigned			unk_0xbbc;						// size 0x001, offset 0xbbc	/* unknown */ // related to VSM
-	byte_t					__pad2[3]; /* unknown (can't be alignment) */
+	u8						currPwmDuty;						// size 0x001, offset 0xbbc
+	u8						pendingPwmDuty;						// size 0x001, offset 0xbbd
+	byte_t					pad1_[2]; /* unknown (can't be alignment) */
 	byte_t					extDataBuf[32];					// size 0x020, offset 0xbc0
-} __attribute__((aligned(0x20))) wpad_cb_st; // size 0xbe0
+} __attribute__((aligned(32))) wpad_cb_st; // size 0xbe0
 
 /*******************************************************************************
  * external variables
@@ -439,6 +427,11 @@ extern wpad_cb_st *__rvl_p_wpadcb[WPAD_MAX_CONTROLLERS];
  * functions
  */
 
+void _WPADEnableDebugMsgs(void);
+void _WPADDisableDebugMsgs(void);
+
+void __WPADReconnect(BOOL saveSimpleDevs);
+
 void WPADiExcludeButton(WPADChannel chan);
 void WPADiCopyOut(WPADChannel chan);
 
@@ -447,36 +440,41 @@ u8 WPADiGetMplsStatus(WPADChannel chan);
 WPADResult WPADiControlMpls(WPADChannel chan, WPADMplsCommand command,
                             WPADCallback *cb);
 
-void WPADiGetMplsCalibration(WPADChannel chan, struct WPADMplsCalibration *high,
-                             struct WPADMplsCalibration *low);
+void WPADiGetMplsCalibration(WPADChannel chan, WPADMplsCalibration *high,
+                             WPADMplsCalibration *low);
+
+void WPADiSetMplsCalibration(WPADChannel chan, WPADMPStatus *status);
+
+BOOL WPADiSendSetVibrator(struct WPADCmdQueue *cmdQueue);
 BOOL WPADiSendSetPort(struct WPADCmdQueue *cmdQueue, u8 port, WPADCallback *cb);
 BOOL WPADiSendSetReportType(struct WPADCmdQueue *cmdQueue, s32 format,
-                            BOOL notContinuous, WPADCallback *cb);
+                            BOOL savePower, WPADCallback *cb);
 BOOL WPADiSendEnableDPD(struct WPADCmdQueue *cmdQueue, BOOL enabled,
-                          WPADCallback *cb);
+                        WPADCallback *cb);
 BOOL WPADiSendEnableSpeaker(struct WPADCmdQueue *cmdQueue, BOOL enabled,
                             WPADCallback *cb);
 BOOL WPADiSendGetContStat(struct WPADCmdQueue *cmdQueue, WPADInfo *wpInfoOut,
                           WPADCallback *cb);
 BOOL WPADiSendWriteDataCmd(struct WPADCmdQueue *cmdQueue, u8 cmd, u32 address,
                            WPADCallback *cb);
-BOOL WPADiSendWriteData(struct WPADCmdQueue *cmdQueue, const void *p_buf,
+BOOL WPADiSendWriteData(struct WPADCmdQueue *cmdQueue, void const *p_buf,
                         u16 len, u32 address, WPADCallback *cb);
 BOOL WPADiSendReadData(struct WPADCmdQueue *cmdQueue, void *p_buf, u16 len,
                        u32 address, WPADCallback *cb);
-BOOL WPADiSendStreamData(struct WPADCmdQueue *cmdQueue, const void *p_buf,
+BOOL WPADiSendStreamData(struct WPADCmdQueue *cmdQueue, void const *p_buf,
                          u16 len);
 BOOL WPADiSendMuteSpeaker(struct WPADCmdQueue *cmdQueue, BOOL muted,
                           WPADCallback *cb);
 BOOL WPADiSendDPDCSB(struct WPADCmdQueue *cmdQueue, BOOL enabled,
                      WPADCallback *cb);
-BOOL WPADiIsAvailableCmdQueue(struct WPADCmdQueue *cmdQueue, s8 count);
+BOOL WPADiIsAvailableCmdQueue(struct WPADCmdQueue *cmdQueue, s8 num);
 
 void WPADiClearQueue(struct WPADCmdQueue *cmdQueue);
 
-#if !defined(NDEBUG)
 BOOL WPADiIsDummyExtension(WPADChannel chan);
-#endif // !defined(NDEBUG)
+
+OSAppType WPADiGetGameType(void);
+char const *WPADiGetGameCode(void);
 
 #ifdef __cplusplus
 	}

@@ -245,6 +245,8 @@ struct OSThread
 }; // size 0x318
 
 void OSInitThreadQueue(OSThreadQueue *queue);
+void OSSleepThread(OSThreadQueue *queue);
+void OSWakeupThread(OSThreadQueue *queue);
 
 // [SPQE7T]/ISpyD.elf:.debug_info::0x2f63
 struct OSMutex
@@ -255,11 +257,9 @@ struct OSMutex
 	OSMutexLink		link;		// size 0x08, offset 0x10
 }; // size 0x18
 
-#define OS_CORE_CLOCK	729000000u
+extern u32 __OSBusClock AT_ADDRESS(0x800000f8);
 
-extern u32 OS_BUS_CLOCK : 0x800000f8;
-
-#define OS_TIMER_CLOCK	(OS_BUS_CLOCK / 4)
+#define OS_TIMER_CLOCK	(__OSBusClock / 4)
 
 // clang-format off
 #define OSTicksToSeconds(ticks)			((ticks)        / (OS_TIMER_CLOCK         )       )
@@ -279,9 +279,12 @@ OSTime OSGetTime(void);
 OSTick OSGetTick(void);
 OSTime __OSGetSystemTime(void);
 
+// TODO: is there a way to make this with an object with address declaration?
+#define CURRENT_AFH_CHANNEL_PHYSICAL_ADDR ((void *)(0x31a2))
+
 // IPC
 
-volatile u32 __IPCRegs[] : 0xcd000000;
+extern u32 volatile __IPCRegs[] AT_ADDRESS(0xcd000000);
 
 inline u32 ACRReadReg(u32 reg)
 {
@@ -415,13 +418,28 @@ NANDResult NANDCloseAsync(NANDFileInfo *info, NANDAsyncCallback *callback,
 
 // SC
 
-// from ogws
+typedef u32 SCStatus;
+enum SCStatus_et
+{
+	SC_STATUS_OK,	/* name known from asserts */
+	SC_STATUS_BUSY,
+	SC_STATUS_FATAL,
+	SC_STATUS_PARSE,
+};
 
-enum SCSensorBarPos
+typedef void SCFlushCallback(SCStatus status);
+
+void SCInit(void);
+SCStatus SCCheckStatus(void);
+
+void SCFlushAsync(SCFlushCallback *cb);
+
+typedef u8 SCSensorBarPos;
+enum SCSensorBarPos_et
 {
 	SC_SENSOR_BAR_BOTTOM,
 	SC_SENSOR_BAR_TOP
-} typedef SCSensorBarPos;
+};
 
 typedef struct SCBtDeviceInfo // basic dev info?
 {
@@ -465,9 +483,10 @@ BOOL SCSetBtDeviceInfoArray(const SCBtDeviceInfoArray *array);
 void SCGetBtCmpDevInfoArray(SCBtCmpDevInfoArray *array);
 BOOL SCSetBtCmpDevInfoArray(const SCBtCmpDevInfoArray *array);
 u32 SCGetBtDpdSensibility(void);
+BOOL SCSetBtDpdSensibility(u8 sens);
 u8 SCGetWpadMotorMode(void);
 BOOL SCSetWpadMotorMode(u8 mode);
-u8 SCGetWpadSensorBarPosition(void);
+SCSensorBarPos SCGetWpadSensorBarPosition(void);
 u8 SCGetWpadSpeakerVolume(void);
 BOOL SCSetWpadSpeakerVolume(u8 vol);
 
@@ -487,22 +506,6 @@ enum SCProductGameRegion_et
 };
 
 SCProductGameRegion SCGetProductGameRegion(void);
-
-typedef u32 SCStatus;
-enum SCStatus_et
-{
-	SC_STATUS_READY,
-	SC_STATUS_BUSY,
-	SC_STATUS_FATAL,
-	SC_STATUS_PARSE,
-};
-
-typedef void SCFlushCallback(SCStatus status);
-
-void SCInit(void);
-SCStatus SCCheckStatus(void);
-
-void SCFlushAsync(SCFlushCallback *cb);
 
 // VI
 

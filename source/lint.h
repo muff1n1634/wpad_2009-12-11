@@ -23,11 +23,11 @@ typedef unsigned long ULONG;
  * functions
  */
 
-int LINTCmp(const ULONG *lhs, const ULONG *rhs);
+int LINTCmp(ULONG *lhs, ULONG const *rhs);
 void LINTLshift(ULONG *dst, ULONG *src, ULONG shift);
-int LINTMsb(const ULONG *data);
-void LINTSub(ULONG *dst, const ULONG *lhs, const ULONG *rhs);
-void LINTMul(ULONG *dst, const ULONG *lhs, const ULONG *rhs);
+int LINTMsb(ULONG const *data);
+void LINTSub(ULONG *dst, ULONG *lhs, ULONG const *rhs);
+void LINTMul(ULONG *dst, ULONG *lhs, ULONG const *rhs);
 
 #ifdef __cplusplus
 	}
