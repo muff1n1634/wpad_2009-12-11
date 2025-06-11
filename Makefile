@@ -36,6 +36,7 @@ wpad_src :=	\
 	WPAD.c			\
 	WPADHIDParser.c	\
 	WPADEncrypt.c	\
+	WPADClamp.c		\
 	WPADMem.c		\
 	lint.c			\
 	WUD.c			\
