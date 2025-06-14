@@ -4711,7 +4711,7 @@ static void __wpadCertGetParamCallback(WPADChannel chan, WPADResult result)
 			        | p_wpd->wmReadDataBuf[i * 4 + 2] << 16
 			        | p_wpd->wmReadDataBuf[i * 4 + 3] << 24;
 
-			LINTNextElement(p_wpd->certParamPtr,
+			*LINTNextElement(p_wpd->certParamPtr,
 			                i + p_wpd->wmParamOffset / (int)sizeof(ULONG)) =
 				wbr;
 		}
@@ -4728,7 +4728,7 @@ static void __wpadCertGetParamCallback(WPADChannel chan, WPADResult result)
 			for (i = 0; i < WM_EXTENSION_CERT_PARAM_SIZE / (int)sizeof(ULONG);
 			     i++)
 			{
-				if (LINTNextElement(p_wpd->certParamPtr, i))
+				if (*LINTNextElement(p_wpd->certParamPtr, i))
 					*p_wpd->certParamPtr = i + 1;
 			}
 		}
