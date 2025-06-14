@@ -1893,8 +1893,8 @@ static void __wpadConnectionCallback(WUDDevInfo *devInfo, u8 success)
 
 		if (p_wpd->cmdBlkCB)
 			(*p_wpd->cmdBlkCB)(chan, WPAD_ENODEV);
-		else if (p_wpd->memBlock.at_0x10)
-			(*p_wpd->memBlock.at_0x10)(chan, WPAD_ENODEV);
+		else if (p_wpd->memBlock.cb)
+			(*p_wpd->memBlock.cb)(chan, WPAD_ENODEV);
 
 		while (__wpadGetCommand(&p_wpd->stdCmdQueue, &cmdBlk))
 		{

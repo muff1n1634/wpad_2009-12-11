@@ -43,30 +43,41 @@ enum WPADExtRegType_et
 // https://wiibrew.org/wiki/Wiimote#EEPROM_Memory
 typedef struct WPADGameInfo
 {
-	OSTime	timestamp;		// size 0x08, offset 0x00
-	u16		gameName[17];	// size 0x22, offset 0x08
-	char	gameID[4];		// size 0x04, offset 0x2a
-	u8		gameType;		// size 0x01, offset 0x2e
-	u8		checksum;		// size 0x01, offset 0x2f
+	OSTime		timestamp;			// size 0x08, offset 0x00
+	u16			gameTitle[16 + 1];	// size 0x22, offset 0x08
+	char		gameCode[4];		// size 0x04, offset 0x2a
+	OSAppType	gameType;			// size 0x01, offset 0x2e
+	byte1_t		checksum;			// size 0x01, offset 0x2f
 
 	/* wiibrew says this exists in the header on the Wiimote but goes unused,
 	 * which matches up with the code I see here
 	 */
-	byte_t	unknown[8];
+	byte_t		_pad0[8];
 } WPADGameInfo; // size 0x38
 
 /*******************************************************************************
  * functions
  */
 
-WPADResult WPADWriteExtReg(WPADChannel chan, const void *data, u16 length,
-                           WPADExtRegType extReg, u16 address,
-                           WPADCallback *cb);
-
-// TODO: sort
-
-WPADResult WPADReadExtReg(WPADChannel chan, void *data, u16 length,
-                          WPADExtRegType extReg, u16 address, WPADCallback *cb);
+WPADResult WPADWriteGameData(WPADChannel chan, void const *data, u16 len,
+                             u16 addr, WPADCallback *cb);
+WPADResult WPADWriteFaceData(WPADChannel chan, void const *data, u16 len,
+                             u16 addr, WPADCallback *cb);
+WPADResult WPADReadGameData(WPADChannel chan, void *data, u16 len, u16 addr,
+                            WPADCallback *cb);
+WPADResult WPADReadFaceData(WPADChannel chan, void *data, u16 len, u16 addr,
+                            WPADCallback *cb);
+WPADResult WPADReadMemoryAsync(WPADChannel chan, void *data, u16 len, u32 addr,
+                               WPADCallback *cb);
+WPADResult WPADWriteMemoryAsync(WPADChannel chan, void const *data, u16 len,
+                                u32 addr, WPADCallback *cb);
+WPADResult WPADGetGameDataTimeStamp(WPADChannel chan, OSTime *time);
+WPADResult WPADGetGameTitleUtf16(WPADChannel chan, u16 **title);
+void WPADSetGameTitleUtf16(u16 const *title);
+WPADResult WPADWriteExtReg(WPADChannel chan, void const *data, u16 len,
+                           WPADExtRegType extReg, u16 addr, WPADCallback *cb);
+WPADResult WPADReadExtReg(WPADChannel chan, void *data, u16 len,
+                          WPADExtRegType extReg, u16 addr, WPADCallback *cb);
 
 #ifdef __cplusplus
 	}

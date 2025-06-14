@@ -41,8 +41,8 @@ enum WPADResult_et
 	WPAD_ERR_BUSY			= -2,	/* name comes from [R89JEL] */
 	WPAD_ERR_TRANSFER		= -3,	/* name comes from [R89JEL] */ // ?
 	WPAD_ERR_INVALID		= -4,	/* name comes from [RT3P54] */
-//	WPAD_ERR_5				= -5,	/* unknown */
-//	WPAD_ERR_6				= -6,	/* unknown */
+	WPAD_ERR_5				= -5,	/* unknown */
+	WPAD_ERR_6				= -6,	/* unknown */
 	WPAD_ERR_CORRUPTED		= -7,	/* name comes from [RT3P54] */
 
 #define WPAD_ESUCCESS	WPAD_ERR_OK
@@ -50,6 +50,8 @@ enum WPADResult_et
 #define WPAD_EBUSY		WPAD_ERR_BUSY
 #define WPAD_ETRANSFER	WPAD_ERR_TRANSFER // I don't know what the POSIX equivalent is
 #define WPAD_EINVAL		WPAD_ERR_INVALID
+#define WPAD_E5			WPAD_ERR_5
+#define WPAD_E6			WPAD_ERR_6
 #define WPAD_EBADE		WPAD_ERR_CORRUPTED
 
 // apparently enum vs constant is a thing. cool
@@ -58,6 +60,8 @@ enum WPADResult_et
 #define WPAD_CEBUSY		(WPAD_EBUSY + 0)
 #define WPAD_CETRANSFER	(WPAD_ETRANSFER + 0)
 #define WPAD_CEINVAL	(WPAD_EINVAL + 0)
+#define WPAD_CE5		(WPAD_E5 + 0)
+#define WPAD_CE6		(WPAD_E6 + 0)
 #define WPAD_CEBADE		(WPAD_EBADE + 0)
 };
 

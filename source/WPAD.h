@@ -26,7 +26,7 @@
  */
 
 // WPADStatusEx is the largest WPADStatus variant (size 0x5a)
-// 0x20 is an arbitrary power of 2 that rounds up to 0x60
+// 32 is an arbitrary power of 2 that rounds up to 0x60
 #define RX_BUFFER_SIZE					ROUND_UP(sizeof(WPADStatusEx), 32)
 
 #define WPAD_CONFIG_BLOCK_CHECKSUM_BIAS	0x55
