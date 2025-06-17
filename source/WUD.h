@@ -12,7 +12,7 @@
 #include <types.h>
 
 #if 0
-#include <revolution/OS/OSAlarm.h>
+#include <revolution/OS/OSAlarm.h> // OSAlarm
 #endif
 
 #include "context_bte.h"
@@ -39,6 +39,7 @@
 	extern "C" {
 #endif
 
+// Applies to all state types
 typedef u8 WUDState;
 enum WUDState_et
 {
@@ -180,12 +181,12 @@ typedef struct /* possibly untagged, like kpad */
 	u8						linkedNum;							// size 0x001, offset 0x6e5
 	u8						syncedNum;							// size 0x001, offset 0x6e6
 
-	u8						syncSkipChecks;						// size 0x001, offset 0x6e7	// maybe? it also adds some checks though???
-	s8						syncLoopNum;						// size 0x001, offset 0x6e8	// implied by usage (see __wudSyncPrepareSearch) and location of stripped symbol WUDSetSyncLoopNum near other members
+	u8						syncSkipChecks;						// size 0x001, offset 0x6e7
+	s8						syncLoopNum;						// size 0x001, offset 0x6e8
 	WUDSyncType				syncType;							// size 0x001, offset 0x6e9
 
 	u8						connectable;						// size 0x001, offset 0x6ea
-	u8						discoverable;						// size 0x001, offset 0x6eb	// implied by usage and WUDGetDiscoverable being right before WUDGetConnectable
+	u8						discoverable;						// size 0x001, offset 0x6eb
 
 	WUDHidReceiveCallback	*hidRecvCB;							// size 0x004, offset 0x6ec
 	WUDHidConnectCallback	*hidConnCB;							// size 0x004, offset 0x6f0
@@ -194,16 +195,16 @@ typedef struct /* possibly untagged, like kpad */
 	WUDFreeFunc				*freeFunc;							// size 0x004, offset 0x6f8
 
 	BD_ADDR					pairAddr;							// size 0x006, offset 0x6fc
-	BD_ADDR					hostAddr;							// size 0x006, offset 0x702	// name comes from stripped symbol _WUDGetHostAddr
+	BD_ADDR					hostAddr;							// size 0x006, offset 0x702
 
 	s8						libStatus;							// size 0x001, offset 0x708
 
-	char unsigned			unk_0x709;							// size 0x001, offset 0x709	/* unknown */
+	u8						siPortStatus;						// size 0x001, offset 0x709
 	UINT8					pmID;								// size 0x001, offset 0x70a
-	s8						syncRssi;							// size 0x001, offset 0x70b	// implied by usage and stripped symbols _WUD[GS]etSyncRssi
-	byte_t					__pad0[4]; // alignment?
+	s8						syncRssi;							// size 0x001, offset 0x70b
+	byte_t					pad0_[4]; // alignment?
 	OSAlarm					alarm;								// size 0x030, offset 0x710
-	u32						hhFlags;							// size 0x004, offset 0x740	// some flags maybe?
+	byte4_t					hhFlags;							// size 0x004, offset 0x740	// some flags maybe?
 
 	// see WUDGetBufferStatus
 	u16						bufferStatus0;						// size 0x002, offset 0x744
@@ -212,7 +213,7 @@ typedef struct /* possibly untagged, like kpad */
 	s8						initWaitDeviceUpFrames;				// size 0x001, offset 0x748
 	s8						waitStartSearchFrames;				// size 0x001, offset 0x749
 	s16						waitIncomingFrames;					// size 0x002, offset 0x74a
-	byte_t					__pad1[4]; // alignment?
+	byte_t					pad1_[4]; // alignment?
 } wud_cb_st; // size 0x750
 
 /*******************************************************************************
@@ -237,12 +238,27 @@ void WUDiMoveBottomStdDevInfoPtr(WUDDevInfo *dev_info);
 void WUDiMoveTopOfDisconnectedStdDevice(WUDDevInfo *dev_info);
 void WUDiMoveTopOfUnusedStdDevice(WUDDevInfo *dev_info);
 
+BOOL _WUDEnableTestMode(void);
+void _WUDStartSyncDevice(BD_ADDR_PTR addr, void *);
+void _WUDReadStoredDevice(tBTM_CMPL_CB *cb);
+void _WUDDeleteStoredDevice(void);
+void _WUDEnableSIPortStatus(void);
+u8 _WUDGetSIPortStatus(void);
+BD_ADDR_PTR _WUDGetHostAddr(void);
 BD_ADDR_PTR _WUDGetDevAddr(UINT8 dev_handle);
+UINT8 *_WUDGetDevKey(UINT8 dev_handle); // LINK_KEY_PTR if it existed
+char *_WUDGetDevName(UINT8 dev_handle);
+s8 _WUDGetSyncType(WUDDevHandle dev_handle);
 u16 _WUDGetQueuedSize(WUDDevHandle dev_handle);
 u16 _WUDGetNotAckedSize(WUDDevHandle dev_handle);
 u8 _WUDGetLinkNumber(void);
+s8 _WUDGetSyncRssi(void);
+void _WUDSetSyncRssi(s8 syncRssi);
+void _WUDSetBTETraceLevel(UINT8 traceLevel);
 
+BOOL _WUDConnect(BD_ADDR_PTR addr, UINT8 *key, char *name);
 WUDDevInfo *WUDiGetDiscoverDevice(void);
+
 
 void WUDiSetDevAddrForHandle(UINT8 dev_handle, BD_ADDR dev_addr);
 BD_ADDR_PTR WUDiGetDevAddrForHandle(UINT8 dev_handle);
@@ -251,12 +267,6 @@ u16 WUDiGetQueueSizeForHandle(UINT8 dev_handle);
 void WUDiSetNotAckNumForHandle(UINT8 dev_handle, u16 count);
 u16 WUDiGetNotAckNumForHandle(UINT8 dev_handle);
 void WUDiShowFatalErrorMessage(void);
-
-// TODO: sort
-
-BOOL WUDIsRegisteredWbc();
-s8 _WUDGetSyncType(WUDDevHandle devHandle);
-void WUDRegisterWbcBuf(void *workArea);
 
 #ifdef __cplusplus
 	}
