@@ -32,40 +32,36 @@
 	extern "C" {
 #endif
 
-// for ease of use in ternaries
 typedef s32 WPADResult;
 enum WPADResult_et
 {
-	WPAD_ERR_OK						= 0,
+	WPAD_ERR_OK				= 0,
 
-	WPAD_ERR_NO_CONTROLLER			= -1,	/* name known from asserts */
-	WPAD_ERR_COMMUNICATION_ERROR	= -2,	// [RT3P54] has this as WPAD_ERR_BUSY
-	WPAD_ERR_3						= -3,	// [RT3P54] has this as WPAD_ERR_TRANSFER
-	WPAD_ERR_INVALID				= -4,	/* name comes from [R89JEL] */
-//	WPAD_ERR_5						= -5,	/* unknown */
-//	WPAD_ERR_6						= -6,	/* unknown */
-	WPAD_ERR_CORRUPTED				= -7,	/* name comes from [R89JEL] */
+	WPAD_ERR_NO_CONTROLLER	= -1,	/* name known from asserts */
+	WPAD_ERR_BUSY			= -2,	/* name comes from [R89JEL] */
+	WPAD_ERR_TRANSFER		= -3,	/* name comes from [R89JEL] */ // ?
+	WPAD_ERR_INVALID		= -4,	/* name comes from [RT3P54] */
+	WPAD_ERR_5				= -5,	/* unknown */
+	WPAD_ERR_6				= -6,	/* unknown */
+	WPAD_ERR_CORRUPTED		= -7,	/* name comes from [RT3P54] */
 
 #define WPAD_ESUCCESS	WPAD_ERR_OK
 #define WPAD_ENODEV		WPAD_ERR_NO_CONTROLLER
-#define WPAD_ECOMM		WPAD_ERR_COMMUNICATION_ERROR
-// #define WPAD_E3
+#define WPAD_EBUSY		WPAD_ERR_BUSY
+#define WPAD_ETRANSFER	WPAD_ERR_TRANSFER // I don't know what the POSIX equivalent is
 #define WPAD_EINVAL		WPAD_ERR_INVALID
-
-/* maybe? i was scouring the internet for explanation and usage of this error
- * macro, and it seems close enough
- *
- * it's not ENODATA, that's more like if you got no data, but here it's that we
- * did get the data but it wasn't good
- */
+#define WPAD_E5			WPAD_ERR_5
+#define WPAD_E6			WPAD_ERR_6
 #define WPAD_EBADE		WPAD_ERR_CORRUPTED
 
-// apparently enum vs literal is a thing. cool
+// apparently enum vs constant is a thing. cool
 #define WPAD_CESUCCESS	(WPAD_ESUCCESS + 0)
 #define WPAD_CENODEV	(WPAD_ENODEV + 0)
-#define WPAD_CECOMM		(WPAD_ECOMM + 0)
-#define WPAD_CERR_3		(WPAD_ERR_3 + 0)
+#define WPAD_CEBUSY		(WPAD_EBUSY + 0)
+#define WPAD_CETRANSFER	(WPAD_ETRANSFER + 0)
 #define WPAD_CEINVAL	(WPAD_EINVAL + 0)
+#define WPAD_CE5		(WPAD_E5 + 0)
+#define WPAD_CE6		(WPAD_E6 + 0)
 #define WPAD_CEBADE		(WPAD_EBADE + 0)
 };
 
@@ -97,7 +93,7 @@ enum WPADDeviceType_et
 {
 	WPAD_DEV_CORE				=  0,
 	WPAD_DEV_FS					=  1,
-	WPAD_DEV_CLASSIC			=  2,	/* name known from asserts, but not value */
+	WPAD_DEV_CLASSIC			=  2,	/* name known from asserts */
 	WPAD_DEV_BALANCE_CHECKER	=  3,
 	WPAD_DEV_VSM				=  4,
 
@@ -165,6 +161,8 @@ enum WPADDataFormat_et
 typedef s32 WPADDeviceMode;
 enum WPADDeviceMode_et
 {
+	WPAD_DEV_MODE_NONE				= -1,
+
 	WPAD_DEV_MODE_NORMAL			= 0,
 
 	WPAD_DEV_MODE_CLASSIC_REDUCED	= 1,
@@ -344,7 +342,9 @@ typedef void WPADSamplingCallback(WPADChannel chan);
 typedef void WPADConnectCallback(WPADChannel chan, s32 result);
 typedef void WPADExtensionCallback(WPADChannel chan, WPADDeviceType devType);
 
+typedef WUDSyncDeviceCallback WPADSyncDeviceCallback;
 typedef WUDSyncDeviceCallback WPADSimpleSyncCallback;
+typedef WUDClearDeviceCallback WPADClearDeviceCallback;
 
 // [SGLEA4]/GormitiDebug.elf:.debug_info::0x79f49
 typedef struct DPDObject
@@ -577,6 +577,20 @@ typedef struct WPADAccGravityUnit
 	s16	z;	// size 0x02, offset 0x04
 } WPADAccGravityUnit; // size 0x06
 
+typedef struct WPADMplsCalibration
+{
+	f32	pitchZero;	// size 0x04, offset 0x00
+	f32	pitchScale;	// size 0x04, offset 0x04
+
+	f32	yawZero;	// size 0x04, offset 0x08
+	f32	yawScale;	// size 0x04, offset 0x0c
+
+	f32	rollZero;	// size 0x04, offset 0x10
+	f32	rollScale;	// size 0x04, offset 0x14
+
+	s32	degrees;	// size 0x04, offset 0x18
+} WPADMplsCalibration; // size 0x1c
+
 /*******************************************************************************
  * functions
  */
@@ -588,8 +602,9 @@ BOOL WPADIsEnabledDRM(void);
 BOOL WPADIsEnabledTKO(void);
 BOOL WPADIsEnabledTBL(void);
 BOOL WPADIsEnabledBLK(void);
+BOOL WPADIsEnabledWBC(void);
 
-// Likely overridden by a WBC-specific library
+// Overridden by the WBC library
 __attribute__((weak)) WPADResult WBCSetupCalibration(void);
 __attribute__((weak)) signed WBCGetCalibrationStatus(void);
 __attribute__((weak)) signed WBCGetBatteryLevel(u8);
@@ -597,24 +612,47 @@ __attribute__((weak)) WPADResult WBCRead(WPADBLStatus *, f64 *, int);
 __attribute__((weak)) WPADResult WBCSetZEROPoint(f64 *, int);
 __attribute__((weak)) WPADResult WBCGetTGCWeight(f64, f64 *, WPADBLStatus *);
 
+void WPADSetDisableChannelImm(u8 afhChannel);
+
 void WPADInit(void);
 void WPADShutdown(void);
 
+void WPADReconnect(void);
+
+void WPADClearPortMapTable(void);
+BOOL WPADSetDisableChannel(void);
+BOOL WPADStartSyncDevice(void);
+BOOL WPADStartFastSyncDevice(void);
+BOOL WPADStartSimpleSync(void);
 BOOL WPADStartFastSimpleSync(void);
 BOOL WPADStopSimpleSync(void);
 BOOL WPADCancelSyncDevice(void);
+BOOL WPADStartClearDevice(void);
+int WPADGetRegisteredDevNum(void);
+int WPADGetTemporaryDevNum(void);
+WPADSyncDeviceCallback *WPADSetSyncDeviceCallback(WPADSyncDeviceCallback *cb);
 WPADSimpleSyncCallback *WPADSetSimpleSyncCallback(WPADSimpleSyncCallback *cb);
+WPADClearDeviceCallback *WPADSetClearDeviceCallback(
+	WPADClearDeviceCallback *cb);
 void WPADRegisterAllocator(WPADAllocFunc *alloc, WPADFreeFunc *free);
+u32 WPADGetWorkMemorySize(void);
 WPADLibStatus WPADGetStatus(void);
 u8 WPADGetRadioSensitivity(WPADChannel chan);
 void WPADGetAddress(WPADChannel chan, BD_ADDR_PTR addr);
+void WPADGetCalibratedDPDObject(DPDObject *dst, DPDObject const *src);
 u8 WPADGetSensorBarPosition(void);
+BOOL WPADSetAcceptConnection(BOOL accept);
+BOOL WPADGetAcceptConnection(void);
 
 void WPADGetAccGravityUnit(WPADChannel chan, WPADAccGravityUnitType type,
                            WPADAccGravityUnit *acc);
+void WPADGetCLTriggerThreshold(WPADChannel chan, u8 *left, u8 *right);
 
 void WPADDisconnect(WPADChannel chan);
-WPADResult WPADProbe(WPADChannel chan, WPADDeviceType *devTypeOut);
+void WPADSetAutoSleepTime(u8 time);
+void WPADResetAutoSleepTimeCount(WPADChannel chan);
+u32 WPADGetAutoSleepTimeCount(WPADChannel chan);
+WPADResult WPADProbe(WPADChannel chan, WPADDeviceType *devType);
 WPADSamplingCallback *WPADSetSamplingCallback(WPADChannel chan,
                                               WPADSamplingCallback *cb);
 WPADConnectCallback *WPADSetConnectCallback(WPADChannel chan,
@@ -623,14 +661,15 @@ WPADExtensionCallback *WPADSetExtensionCallback(WPADChannel chan,
                                                 WPADExtensionCallback *cb);
 WPADDataFormat WPADGetDataFormat(WPADChannel chan);
 WPADResult WPADSetDataFormat(WPADChannel chan, WPADDataFormat fmt);
+WPADResult WPADGetInfo(WPADChannel chan, WPADInfo *info);
 
 WPADResult WPADGetInfoAsync(WPADChannel chan, WPADInfo *info, WPADCallback *cb);
+WPADResult WPADGetSyncType(WPADChannel chan, u8 *type);
 void WPADControlMotor(WPADChannel chan, WPADMotorCommand command);
 void WPADEnableMotor(BOOL enabled);
 BOOL WPADIsMotorEnabled(void);
-WPADResult WPADControlLed(WPADChannel chan, u8 ledFlags, WPADCallback cb);
+WPADResult WPADControlLed(WPADChannel chan, u8 ledFlags, WPADCallback *cb);
 BOOL WPADSaveConfig(SCFlushCallback *cb);
-
 /* NOTE: status should match the WPADStatus type for the channel; a check
  * against the currently assigned device type is made to know how much to copy
  *
@@ -639,24 +678,63 @@ BOOL WPADSaveConfig(SCFlushCallback *cb);
  */
 void WPADRead(WPADChannel chan, WPADStatus *status);
 void WPADSetAutoSamplingBuf(WPADChannel chan, void *buf, u32 length);
-
+int WPADGetLatestIndexInBuf(WPADChannel chan);
 BOOL WPADIsSpeakerEnabled(WPADChannel chan);
 WPADResult WPADControlSpeaker(WPADChannel chan, WPADSpeakerCommand command,
                               WPADCallback *cb);
 u8 WPADGetSpeakerVolume(void);
-void WPADSetSpeakerVolume(u8 vol);
+void WPADSetSpeakerVolume(u8 volume);
 
 BOOL WPADCanSendStreamData(WPADChannel chan);
 WPADResult WPADSendStreamData(WPADChannel chan, void *p_buf, u16 len);
+void WPADSetDpdSensitivity(u8 sensitivity);
 u8 WPADGetDpdSensitivity(void);
+BOOL WPADSaveDpdSensitivity(SCFlushCallback *cb);
+BOOL WPADSetSensorBarPower(BOOL enabled);
+void WPADGetDpdCornerPoints(WPADChannel chan, DPDObject *points);
+WPADDpdCommand WPADGetDpdFormat(WPADChannel chan);
 BOOL WPADIsDpdEnabled(WPADChannel chan);
 
 WPADResult WPADControlDpd(WPADChannel chan, WPADDpdCommand command,
                           WPADCallback *cb);
+WPADResult WPADControlExtGimmick(WPADChannel chan, signed, WPADCallback *cb);
 WPADResult WPADControlBLC(WPADChannel chan, WPADBLCCommand command,
                           WPADCallback *cb);
+WPADResult WPADSetBLReg(WPADChannel chan, u8 data, u16 addr, WPADCallback *cb);
+WPADResult WPADGetBLReg(WPADChannel chan, u8 *data, u16 addr, WPADCallback *cb);
+WPADResult WPADGetBLCalibration(WPADChannel chan, void *data, u16 addr, u16 len,
+                                WPADCallback *cb);
+void WPADRegisterBLCWorkarea(void *workArea);
+
+WPADResult WPADSetVSMLEDDrivePWMDuty(WPADChannel chan, u8 duty,
+                                     WPADCallback *cb);
+WPADResult WPADGetVSMLEDDrivePWMDuty(WPADChannel chan, u8 *duty,
+                                     WPADCallback *cb);
+WPADResult WPADSetVSMPOT1State(WPADChannel chan, u8 state, WPADCallback *cb);
+WPADResult WPADGetVSMPOT1State(WPADChannel chan, u8 *state, WPADCallback *cb);
+WPADResult WPADSetVSMPOT2State(WPADChannel chan, u8 state, WPADCallback *cb);
+WPADResult WPADGetVSMPOT2State(WPADChannel chan, u8 *state, WPADCallback *cb);
+WPADResult WPADSetVSMInputSource(WPADChannel chan, u8 source, WPADCallback *cb);
+WPADResult WPADGetVSMInputSource(WPADChannel chan, u8 *source,
+                                 WPADCallback *cb);
+WPADResult WPADGetVSMCalibration(WPADChannel chan, void *data, u16 addr,
+                                 u16 len, WPADCallback *cb);
+
+u8 WPADGetMplsStatus(WPADChannel chan);
+
+WPADResult WPADControlMpls(WPADChannel chan, u8 status, WPADCallback *cb);
+
+void WPADGetMplsCalibration(WPADChannel chan, WPADMplsCalibration *high,
+                            WPADMplsCalibration *low);
+
+void WPADSetMplsCalibration(WPADChannel chan, WPADStatus *status);
 
 void WPADRecalibrate(WPADChannel chan);
+BOOL WPADAttachDummyExtension(WPADChannel chan, WPADDeviceType devType);
+BOOL WPADDetachDummyExtension(WPADChannel chan);
+BOOL WPADIsRegisteredBLC(void);
+void WPADSetPowerSaveMode(WPADChannel chan, BOOL enabled);
+BOOL WPADGetPowerSaveMode(WPADChannel chan);
 BOOL WPADIsUsedCallbackByKPAD(void);
 void WPADSetCallbackByKPAD(BOOL isKPAD);
 

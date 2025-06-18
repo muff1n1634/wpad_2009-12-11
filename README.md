@@ -42,7 +42,7 @@ By its nature, matching decompilation *has* a finish line, and this source is al
 
 - [x] ~~`WPAD.c`: `__wpadInitSub` (optimization stuff?)~~
 - [ ] `lint.c`: `LINTMul` (64 bit math)
-- [ ] `WUD.c`: `__wudWritePatch` (inlining shenanigans)
+- [x] ~~`WUD.c`: `__wudWritePatch` (inlining shenanigans)~~
 
 as well as some fakematches scattered around.
 

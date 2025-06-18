@@ -90,16 +90,26 @@ struct WUDDevInfo
 
 BOOL WUDIsLinkedWBC(void);
 
+void WUDRegisterWbcBuf(void *buf);
+
 BOOL WUDInit(void);
 void WUDRegisterAllocator(WUDAllocFunc *alloc, WUDFreeFunc *free);
+u32 WUDGetAllocatedMemSize(void);
 void WUDShutdown(BOOL saveSimpleDevs);
 WUDLibStatus WUDGetStatus(void);
+int WUDGetRegisteredDevNum(void);
+int WUDGetTemporaryDevNum(void);
 u8 WUDGetBufferStatus(void);
 void WUDSetSniffMode(BD_ADDR addr, int interval);
+WUDSyncDeviceCallback *WUDSetSyncDeviceCallback(WUDSyncDeviceCallback *cb);
 WUDSyncDeviceCallback *WUDSetSyncSimpleCallback(WUDSyncDeviceCallback *cb);
+WUDClearDeviceCallback *WUDSetClearDeviceCallback(WUDClearDeviceCallback *cb);
 
+BOOL WUDStartFastSyncDevice(void);
 BOOL WUDStartSyncDevice(void);
 BOOL WUDStartFastSyncSimple(void);
+BOOL WUDStartSyncSimple(void);
+BOOL WUDStartSyncSpDevice(u8 target);
 
 BOOL WUDCancelSyncDevice(void);
 BOOL WUDStopSyncSimple(void);
@@ -107,10 +117,16 @@ BOOL WUDStartClearDevice(void);
 BOOL WUDSetDisableChannel(s8 afhChannel);
 WUDHidConnectCallback *WUDSetHidConnCallback(WUDHidConnectCallback *hidConn);
 WUDHidReceiveCallback *WUDSetHidRecvCallback(WUDHidReceiveCallback *hidRecv);
+void WUDSetSyncLoopNum(s8 num);
 void WUDSetVisibility(u8 discoverable, u8 connectable);
+u8 WUDGetDiscoverable(void);
 u8 WUDGetConnectable(void);
 
 BOOL WUDIsBusy(void);
+
+BOOL WUDIsRegisteredWbc(void);
+
+BOOL WUDRegisterDevice(BD_ADDR_PTR addr, UINT8 *key, char *name);
 
 void WUDSetDeviceHistory(WUDChannel chan, BD_ADDR addr);
 BOOL WUDIsLatestDevice(WUDChannel chan, BD_ADDR addr);

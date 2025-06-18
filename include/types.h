@@ -32,9 +32,16 @@ typedef int				BOOL;
 #define TRUE			1
 #define FALSE			0
 
+// Byte types
+
+typedef unsigned long int	byte4_t;
+typedef unsigned short int	byte2_t;
+typedef unsigned char		byte1_t;
+
+typedef byte1_t				byte_t;
+
 // Other types
 
-typedef unsigned char	byte_t;
-typedef unsigned int	register_t;
+typedef unsigned long int	register_t;
 
 #endif // TYPES_H

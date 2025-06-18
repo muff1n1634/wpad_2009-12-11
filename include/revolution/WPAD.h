@@ -6,6 +6,7 @@
  */
 
 #include <revolution/WPAD/WPAD.h>
+#include <revolution/WPAD/WPADClamp.h>
 #include <revolution/WPAD/WPADMem.h>
 
 // i don't think this was public? so commented out

@@ -1,8 +1,11 @@
+#define const
 #include "lint.h"
 
 /*******************************************************************************
  * headers
  */
+
+#include <macros.h> // ATTR_UNUSED
 
 #include <limits.h>
 #include <string.h> // memset
@@ -16,6 +19,9 @@
 
 #define ULLONG_ULONG_BIT_DIFF	(ULLONG_BIT - ULONG_BIT)
 
+#define ULONG_MSB				((1ul << (ULONG_BIT - 1)))
+#define ULLONG_FIRST			((ULLONG)ULONG_MAX + 1)
+
 /*******************************************************************************
  * types
  */
@@ -25,7 +31,7 @@ typedef unsigned long long ULLONG;
 /*******************************************************************************
  * explanation
  *
- * so basically these LINT* functions operate on these buffers where
+ * So basically these LINT* functions operate on these buffers where
  *
  *	struct LINTBuf
  *	{
@@ -34,25 +40,29 @@ typedef unsigned long long ULLONG;
  *		ULONG	terminator = 0;
  *	};
  *
+ * and the data goes backwards (data[0] has the lowest order word, data[size]
+ * has the highest).
+ *
  * i also tried to make the functions here as type-generic as possible, but some
  * assumptions within the functions may inherently remain that there is a 32-bit
  * wide type and a 64-bit wide type on the machine
  *
+ * LINT is likely short for Large INTeger, like bignums.
  */
 
 /*******************************************************************************
  * functions
  */
 
-int LINTCmp(const ULONG *lhs, const ULONG *rhs)
+int LINTCmp(ULONG *lhs, ULONG *rhs)
 {
 	int i;
 
-	ULONG lhsSize = lhs[0];
-	ULONG rhsSize = rhs[0];
+	ULONG lhsSize = LINTGetSize(lhs);
+	ULONG rhsSize = LINTGetSize(rhs);
 
-	const ULONG *lhsData = lhs + 1;
-	const ULONG *rhsData = rhs + 1;
+	ULONG *lhsData = LINTGetData(lhs);
+	ULONG *rhsData = LINTGetData(rhs);
 
 	if (lhsSize > rhsSize)
 		return 1;
@@ -60,7 +70,7 @@ int LINTCmp(const ULONG *lhs, const ULONG *rhs)
 	if (lhsSize < rhsSize)
 		return -1;
 
-	for (i = lhsSize - 1; i >= 0; i--)
+	for (i = lhsSize - 1; i >= 0; --i)
 	{
 		if (lhsData[i] > rhsData[i])
 			return 1;
@@ -72,141 +82,219 @@ int LINTCmp(const ULONG *lhs, const ULONG *rhs)
 	return 0;
 }
 
-// const fucks up loop optimization on release
-void LINTLshift(ULONG *dst, /* const */ ULONG *src, ULONG shift)
+// Good day to you, Xenia
+void LINTLshift(ULONG *dst, ULONG *src, ULONG shift)
 {
-	// i being int here just fucks up release in general
 	ULONG i;
 
-	ULONG size = src[0];
+	ULONG size = LINTGetSize(src);
 
-	ULONG *srcData = src + 1;
-	ULONG *dstData = dst + 1;
+	ULONG *srcData = LINTGetData(src);
+	ULONG *dstData = LINTGetData(dst);
 
 	ULONG bigShift = shift / ULONG_BIT;
 	ULONG smallShift = shift % ULONG_BIT;
 
-	for (i = 0; i < bigShift; i++)
+	for (i = 0; i < bigShift; ++i)
 		dstData[i] = 0;
 
-	ULLONG num = 0;
+	ULLONG tmp = 0;
 
-	for (i = 0; i < size; i++)
+	for (i = 0; i < size; ++i)
 	{
-		num += (ULLONG)srcData[i] << smallShift;
+		tmp += (ULLONG)srcData[i] << smallShift;
 
-		dstData[i + bigShift] = num & ULONG_MAX;
-		num = (num >> ULLONG_ULONG_BIT_DIFF) & ULONG_MAX;
+		dstData[i + bigShift] = tmp & ULONG_MAX;
+		tmp = (tmp >> ULLONG_ULONG_BIT_DIFF) & ULONG_MAX;
 	}
 
-	dstData[i + bigShift] = num;
-	*dst = size + bigShift;
+	dstData[i + bigShift] = tmp;
 
-	if (num)
-		(*dst)++;
+	// recalculating size
+	LINTSetSize(dst, size + bigShift);
+
+	if (tmp)
+		++(*dst); // would be LINTSetSize(dst, LINTGetSize(dst) + 1);
 }
 
-int LINTMsb(const ULONG *data)
+int LINTMsb(ULONG *num)
 {
-	int i;
+	ULONG i;
 
-	ULONG size = data[0];
+	ULONG size = LINTGetSize(num);
 
-	ULONG last = LINTNextElement(data, size - 1);
-	ULONG msbPos = ULONG_BIT;
-	ULONG a __attribute__((unused));
+	ULONG last = *LINTNextElement(num, size - 1);
+	int msbPos = ULONG_BIT;
 
-	i = 0;
-	while (i < ULONG_BIT)
+	// NOTE: msbPos-- is explicitly post-decrement
+	for (i = 0; i < ULONG_BIT; ++i, msbPos--)
 	{
-		if (((1ul << (ULONG_BIT - 1)) >> i) & last)
+		if ((ULONG_MSB >> i) & last)
 			break;
-
-		i++;
-		a = msbPos--; // ?
 	}
 
 	return msbPos + (size - 1) * ULONG_BIT;
 }
 
-void LINTSub(ULONG *dst, const ULONG *lhs, const ULONG *rhs)
+void LINTAdd(ULONG *dst, ULONG *lhs, ULONG *rhs)
 {
-	int i;
+	ULONG i;
 
-	ULONG lhsSize = lhs[0];
-	ULONG rhsSize = rhs[0];
+	ULONG lhsSize = LINTGetSize(lhs);
+	ULONG rhsSize = LINTGetSize(rhs);
 
-	const ULONG *lhsData = lhs + 1;
-	const ULONG *rhsData = rhs + 1;
-	ULONG *dstData = dst + 1;
+	ULONG *lhsData = LINTGetData(lhs);
+	ULONG *rhsData = LINTGetData(rhs);
+	ULONG *dstData = LINTGetData(dst);
 
-	ULLONG num = 0;
+	ULLONG tmp = 0;
 
-	for (i = 0; i < lhsSize; i++)
+	for (i = 0; i < lhsSize || i < rhsSize; ++i)
 	{
-		dstData[i] = lhsData[i] - (ULONG)num;
+		if (i < lhsSize)
+			tmp += lhsData[i];
 
-		if ((ULLONG)dstData[i] > ULONG_MAX - num)
-			num = 1;
+		if (i < rhsSize)
+			tmp += rhsData[i];
+
+		dstData[i] = tmp & ULONG_MAX;
+
+		tmp = tmp / ULLONG_FIRST & ULONG_MAX;
+	}
+
+	dstData[i] = (ULONG)tmp;
+
+	// recalculating size
+	dstData[i] == 0 ? LINTSetSize(dst, i) : LINTSetSize(dst, i + 1);
+}
+
+void LINTSub(ULONG *dst, ULONG *lhs, ULONG *rhs)
+{
+	ULONG i;
+
+	ULONG lhsSize = LINTGetSize(lhs);
+	ULONG rhsSize = LINTGetSize(rhs);
+
+	ULONG *lhsData = LINTGetData(lhs);
+	ULONG *rhsData = LINTGetData(rhs);
+	ULONG *dstData = LINTGetData(dst);
+
+	ULLONG tmp = 0;
+
+	for (i = 0; i < lhsSize; ++i)
+	{
+		dstData[i] = lhsData[i] - (ULONG)tmp;
+
+		if (dstData[i] > ULONG_MAX - tmp)
+			tmp = 1;
 		else
-			num = 0;
+			tmp = 0;
 
 		if (i < rhsSize)
 			dstData[i] -= rhsData[i];
 
-		if (dstData[i] > -1l - rhsData[i])
-			num++;
+		if (dstData[i] > ULONG_MAX - rhsData[i])
+			++tmp;
 	}
 
+	// recalculating size
 	i = lhsSize;
 	while (i && !dstData[i])
-		i--;
+		--i;
 
-	*dst = i + 1;
+	LINTSetSize(dst, i + 1);
 }
 
 // TODO on release
-void LINTMul(ULONG *dst, const ULONG *lhs, const ULONG *rhs)
+#pragma push
+
+void LINTMul(ULONG *dst, ULONG *lhs, ULONG *rhs)
 {
-	int i, j;
+	ULONG i;
+	ULONG j;
 
-	const ULONG lhsSize = lhs[0];
-	const ULONG rhsSize = rhs[0];
+	ULONG lhsSize = LINTGetSize(lhs);
+	ULONG rhsSize = LINTGetSize(rhs);
 
-	const ULONG *lhsData = lhs + 1;
-	const ULONG *rhsData = rhs + 1;
-	ULONG *dstData = dst + 1;
+	ULONG *lhsData = LINTGetData(lhs);
+	ULONG *rhsData = LINTGetData(rhs);
+	ULONG *dstData = LINTGetData(dst);
 
-	ULLONG num = 0;
+	ULLONG tmp = 0;
 
-	dst[0] = 1;
+	LINTSetSize(dst, 1);
 
-	memset(dst + 1, 0, 128); // where is 128 from?
+	// TODO: where is 32 from? (30 + 2?)
+	memset(LINTGetData(dst), 0, sizeof(ULONG) * 32);
 
-	// buffer was cleared
-	if ((lhs[0] == 1 && lhs[1] == 0) || (rhs[0] == 1 && rhs[1] == 0))
-		return;
-
-	for (i = 0; i < rhsSize; i++)
+	// either number is 0
+	if ((LINTGetSize(lhs) == 1 && LINTGetData(lhs)[0] == 0)
+	    || (LINTGetSize(rhs) == 1 && LINTGetData(rhs)[0] == 0))
 	{
-		num = 0;
-
-		for (j = 0; j < lhsSize; j++)
-		{
-			num = (ULLONG)lhsData[j] * rhsData[i] + num
-			    + dstData[i + j];
-
-			dstData[i + j] = num & ULONG_MAX;
-			num = ((num >> ULLONG_ULONG_BIT_DIFF) & ULONG_MAX)
-			    % (1ull << ULLONG_ULONG_BIT_DIFF);
-		}
-
-		dstData[i + j] = num;
+		return;
 	}
 
-	ULONG a __attribute__((unused)); // ?
-	if (num == 0)
-		a = *dst = lhsSize + rhsSize - 1;
-	else
-		a = *dst = lhsSize + rhsSize;
+	for (i = 0; i < rhsSize; ++i)
+	{
+		tmp = 0;
+
+		for (j = 0; j < lhsSize; ++j)
+		{
+			tmp =
+				(ULLONG)tmp + (ULLONG)lhsData[j] * rhsData[i] + dstData[i + j];
+
+			dstData[i + j] = tmp & ULONG_MAX;
+
+#if !defined(NDEBUG)
+			tmp = (tmp >> ULLONG_ULONG_BIT_DIFF & ULONG_MAX) % ULLONG_FIRST;
+#else // TODO
+			tmp >>= ULLONG_ULONG_BIT_DIFF;
+			tmp &= ULONG_MAX;
+			tmp %= ULLONG_FIRST;
+#endif
+		}
+
+		dstData[i + j] = tmp;
+	}
+
+	// recalculating size
+	tmp == 0 ? LINTSetSize(dst, lhsSize + rhsSize - 1)
+			 : LINTSetSize(dst, lhsSize + rhsSize);
+}
+
+#pragma pop
+
+void LINTMod(ULONG *dst, ULONG *lhs, ULONG *rhs)
+{
+	int i;
+
+	// force of habit, i'm sure
+	ULONG lhsSize __attribute__((unused)) = LINTGetSize(lhs);
+	ULONG rhsSize __attribute__((unused)) = LINTGetSize(rhs);
+
+	ULONG tmpLint[LINT_NUM_MAX_BUFSIZ];
+
+	int msbDiff = LINTMsb(lhs) - LINTMsb(rhs);
+
+	memcpy(dst, lhs, sizeof(ULONG) * LINT_NUM_MAX_BUFSIZ);
+
+	for (i = msbDiff; i >= 0; --i)
+	{
+		LINTLshift(tmpLint, rhs, i);
+
+		if (LINTCmp(dst, tmpLint) >= 0)
+			LINTSub(dst, dst, tmpLint);
+	}
+
+	if (LINTCmp(dst, tmpLint) >= 0)
+		LINTSub(dst, dst, rhs);
+}
+
+void LINTAddMod(ULONG *dst, ULONG *add1, ULONG *add2, ULONG *mod)
+{
+	LINTAdd(dst, add1, add2);
+
+	// Hello. Have you heard of the >= operator. I think your neighbor has
+	if (LINTCmp(dst, mod) > 0 || LINTCmp(dst, mod) == 0)
+		LINTSub(dst, dst, mod);
 }

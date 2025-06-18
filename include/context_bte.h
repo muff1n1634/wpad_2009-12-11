@@ -56,6 +56,12 @@ typedef int8_t INT8;
 
 typedef unsigned char BOOLEAN;
 
+/* muff1n: It seems like BTE_TRACE_LEVEL_VERBOSE did not exist at the time. Or
+ * maybe it was a different logging level. At the very least, one logging level
+ * is missing.
+ */
+#define MAX_TRACE_LEVEL 5
+
 #define BD_ADDR_LEN     6                   /* Device address length */
 typedef UINT8 BD_ADDR[BD_ADDR_LEN];         /* Device address */
 typedef UINT8 *BD_ADDR_PTR;                 /* Pointer to Device Address */
@@ -972,7 +978,9 @@ void BTA_HhSendData(UINT8 dev_handle, BT_HDR *p_data);
 
 void bta_sys_set_trace_level(UINT8 level);
 
-void BTM_DeviceReset (tBTM_CMPL_CB *p_cb);
+void BTM_DeviceReset(tBTM_CMPL_CB *p_cb);
+
+tBTM_STATUS BTM_EnableTestMode(void);
 
 tBTM_STATUS BTM_ReadStoredLinkKey(BD_ADDR bd_addr, tBTM_CMPL_CB *p_cb);
 tBTM_STATUS BTM_WriteStoredLinkKey(UINT8 num_keys,

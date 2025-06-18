@@ -7,7 +7,9 @@
  * headers
  */
 
-#include <revolution/WPAD/WPAD.h> // WPADChannel
+#include <types.h>
+
+#include <revolution/WPAD/WPAD.h>
 
 /*******************************************************************************
  * types
@@ -19,12 +21,12 @@
 
 struct WPADMemBlock
 {
-	int signed		at_0x00;	// size 0x04, offset 0x00
-	int signed		at_0x04;	// size 0x04, offset 0x04
-	short signed	at_0x08;	// size 0x02, offset 0x08
+	BOOL			busy;			// size 0x04, offset 0x00
+	byte_t			const *data;	// size 0x04, offset 0x04
+	u16				len;			// size 0x02, offset 0x08
 	// 2 bytes padding (probably alignment, see WPADiClearMemBlock)
-	int signed		at_0x0c;	// size 0x04, offset 0x0c
-	WPADCallback	*at_0x10;	// size 0x04, offset 0x10
+	u32				addr;			// size 0x04, offset 0x0c
+	WPADCallback	*cb;			// size 0x04, offset 0x10
 }; // size 0x14
 
 /*******************************************************************************

@@ -4,12 +4,16 @@
  * headers
  */
 
-#include <errno.h>
+#include "revolution/WPAD/WPADMem.h"
+#include <errno.h> // IWYU pragma: keep (#pragma errno_name ... affects codegen)
 #include <math.h>
+#include <stddef.h>
 #include <string.h>
 
+#include <macros.h> // ATTR_UNUSED
 #include <types.h>
 
+#include "lint.h"
 #include "WPAD.h"
 #include "WPADEncrypt.h"
 #include <revolution/WPAD/WUD.h> // WUDIsLinkedWBC
@@ -239,15 +243,15 @@
 #define MAKE_MP_CL_BUTTON(high_, low_, up_, left_)		((u16)(((u16)((u16)(high_) << 8) & 0xfe00) | ((low_) & 0xfc) | (((u16)(left_) << 1) & 0x02) | ((up_) & 0x01)) ^ WPAD_BUTTON_CL_ALL)
 
 // Button report
-#define __parse_btn_data(wpadcb_, status_, btnFormat_, data_, length_)				\
-	do																				\
-	{																				\
-		(status_)->button = MAKE_BUTTON((data_)[RPT_BTN1], (data_)[RPT_BTN0]);		\
-																					\
-		if ((btnFormat_) == BTN_FORMAT_STANDARD)									\
-			(wpadcb_)->wpInfo.nearempty = (u8)(((data_)[RPT_BTN0] & 0x80) >> 7);	\
-		else if ((btnFormat_) == BTN_FORMAT_INTERLEAVED)							\
-			(wpadcb_)->wpInfo.nearempty = FALSE;									\
+#define __parse_btn_data(wpadcb_, status_, btnFormat_, data_, length_)			\
+	do																			\
+	{																			\
+		(status_)->button = MAKE_BUTTON((data_)[RPT_BTN1], (data_)[RPT_BTN0]);	\
+																				\
+		if ((btnFormat_) == BTN_FORMAT_STANDARD)								\
+			(wpadcb_)->info.nearempty = (u8)(((data_)[RPT_BTN0] & 0x80) >> 7);	\
+		else if ((btnFormat_) == BTN_FORMAT_INTERLEAVED)						\
+			(wpadcb_)->info.nearempty = FALSE;									\
 	} while (0)
 
 // clang-format on
@@ -446,7 +450,7 @@ static void __wpadAbortInitExtension(WPADChannel chan, WPADResult result)
 	{
 		devType = WPAD_DEV_NONE;
 	}
-	else if (p_wpd->wpInfo.attach)
+	else if (p_wpd->info.attach)
 	{
 		if (_wpadExtInitRetryCnt[chan]++ < 32)
 		{
@@ -461,7 +465,7 @@ static void __wpadAbortInitExtension(WPADChannel chan, WPADResult result)
 	else
 	{
 		WPADiSendSetReportType(&p_wpd->extCmdQueue, p_wpd->dataFormat,
-		                       p_wpd->disableContReport, NULL);
+		                       p_wpd->savePower, NULL);
 		return;
 	}
 
@@ -602,7 +606,7 @@ static void __wpadGetDevConfig(WPADChannel chan, WPADResult result)
 		y += p_wpd->devConfig.dpd[i].y - defaultDpdY[i];
 	}
 
-	// NOTE: specifically not a compound assignment
+	// NOTE: specifically not compound assignments
 	x = x / 4.0f;
 	y = y / 4.0f;
 
@@ -622,7 +626,7 @@ static void __wpadGetDevConfig(WPADChannel chan, WPADResult result)
 		_wpadCenterY[chan] += b[i];
 	}
 
-	// NOTE: specifically not a compound assignment
+	// NOTE: specifically not compound assignments
 	_wpadCenterX[chan] = _wpadCenterX[chan] / 4.0f;
 	_wpadCenterY[chan] = _wpadCenterY[chan] / 4.0f;
 
@@ -759,9 +763,9 @@ static void __wpadGetMpConfig(WPADChannel chan, byte_t *config,
 {
 	wpad_cb_st *p_wpd = __rvl_p_wpadcb[chan];
 
-	struct WPADMplsCalibration *calib = type == MPLS_CALIB_TYPE_HIGH
-	                                      ? &p_wpd->extConfig.mpls.high
-	                                      : &p_wpd->extConfig.mpls.low;
+	WPADMplsCalibration *calib = type == MPLS_CALIB_TYPE_HIGH
+	                               ? &p_wpd->extConfig.mpls.high
+	                               : &p_wpd->extConfig.mpls.low;
 
 	calib->pitchZero = MAKE_MP_CONFIG_ZERO_VALUE(config[4], config[5]);
 	calib->yawZero = MAKE_MP_CONFIG_ZERO_VALUE(config[0], config[1]);
@@ -786,7 +790,7 @@ static void __wpadGetExtConfig(WPADChannel chan, WPADResult result)
 
 	byte_t *data = p_wpd->wmReadDataPtr;
 
-	if (!p_wpd->wpInfo.attach)
+	if (!p_wpd->info.attach)
 	{
 		p_wpd->devType = _wpadDevType[chan] = WPAD_DEV_CORE;
 		p_wpd->devMode = _wpadDevMode[chan] = WPAD_DEV_MODE_NORMAL;
@@ -955,7 +959,7 @@ static void __wpadGetExtConfig2(WPADChannel chan, WPADResult result)
 			p_wpd->parseMPState = 4;
 		}
 	}
-	else if (result == WPAD_ERR_3)
+	else if (result == WPAD_ETRANSFER)
 	{
 		p_wpd->parseMPState = 2;
 	}
@@ -990,7 +994,7 @@ static void __wpadGetExtType(WPADChannel chan, WPADResult result)
 
 	if (result == WPAD_ESUCCESS)
 	{
-		if (!p_wpd->wpInfo.attach)
+		if (!p_wpd->info.attach)
 		{
 			p_wpd->devType = _wpadDevType[chan] = WPAD_DEV_CORE;
 			p_wpd->devMode = _wpadDevMode[chan] = WPAD_DEV_MODE_NORMAL;
@@ -1113,7 +1117,7 @@ static void __wpadGetExtType(WPADChannel chan, WPADResult result)
 				if (WPADIsEnabledVSM())
 				{
 					_wpadDevType[chan] = WPAD_DEV_VSM;
-					p_wpd->unk_0xbbc = 0;
+					p_wpd->currPwmDuty = 0;
 				}
 				else
 				{
@@ -1291,16 +1295,16 @@ static void __wpadGetGameInfo(WPADChannel chan, WPADResult result, u8 param_3)
 		if (bufPtrRead[47] == crc)
 		{
 			memcpy(&p_wpd->gameInfo, bufPtrCalc, sizeof p_wpd->gameInfo);
-			p_wpd->at_0x038[param_3] = 0; // WPAD_ESUCCESS?
+			p_wpd->unk_0x038[param_3] = 0; // WPAD_ESUCCESS?
 		}
 		else
 		{
-			p_wpd->at_0x038[param_3] = -4; // WPAD_EINVAL?
+			p_wpd->unk_0x038[param_3] = -4; // WPAD_EINVAL?
 		}
 	}
 	else
 	{
-		p_wpd->at_0x038[param_3] = -4;
+		p_wpd->unk_0x038[param_3] = -4;
 	}
 }
 
@@ -1313,7 +1317,7 @@ static void __wpadInitExtension(WPADChannel chan)
 	WPADiClearQueue(&p_wpd->extCmdQueue);
 
 	WPADiSendSetReportType(&p_wpd->extCmdQueue, p_wpd->dataFormat,
-	                       p_wpd->disableContReport, &__wpadAbortInitExtension);
+	                       p_wpd->savePower, &__wpadAbortInitExtension);
 
 	p_wpd->extState = WPAD_STATE_EXT_INITIALIZED;
 
@@ -1380,7 +1384,7 @@ static void __wpadCheckDataFormat(u8 chan, u8 rep_id, void *data)
 	WPAD_FMT_CLASSIC_BTN			= RPTID_DATA_BTN_EXT8
 	WPAD_FMT_CLASSIC_BTN_ACC		= RPTID_DATA_BTN_ACC_EXT16
 	WPAD_FMT_CLASSIC_BTN_ACC_DPD	= RPTID_DATA_BTN_ACC_DPD10_EXT9
-	WPAD_FMT_DPD_EXTENDED			= RPTID_DATA_BTN_ACC_DPD18_1 or 2
+	WPAD_FMT_DPD_EXTENDED			= RPTID_DATA_BTN_ACC_DPD18_1 and 2
 
 	WPAD_FMT_TRAIN					= RPTID_DATA_BTN_EXT8
 	WPAD_FMT_GUITAR					= RPTID_DATA_BTN_ACC_DPD10_EXT9
@@ -1492,7 +1496,7 @@ static void __a1_20_status_report(u8 chan, byte_t *hidReport, void *rxBuffer)
 	WPADStatus *status = rxBuffer;
 
 	BOOL intrStatus;
-	BOOL currentlyHasExtension = p_wpd->wpInfo.attach;
+	BOOL currentlyHasExtension = p_wpd->info.attach;
 
 	intrStatus = OSDisableInterrupts();
 
@@ -1504,39 +1508,41 @@ static void __a1_20_status_report(u8 chan, byte_t *hidReport, void *rxBuffer)
 
 #if !defined(NDEBUG)
 	if (!WPADiIsDummyExtension(chan))
+#else
+	if (!FALSE)
 #endif
-		p_wpd->wpInfo.attach = (hidReport[RPT20_FLAGS] & 0x02) >> 1;
+		p_wpd->info.attach = (hidReport[RPT20_FLAGS] & 0x02) >> 1;
 
-	p_wpd->wpInfo.lowBat = hidReport[RPT20_FLAGS] & 0x01;
-	p_wpd->wpInfo.led = (hidReport[RPT20_FLAGS] & 0xf0) >> 4;
+	p_wpd->info.lowBat = hidReport[RPT20_FLAGS] & 0x01;
+	p_wpd->info.led = (hidReport[RPT20_FLAGS] & 0xf0) >> 4;
 
 	/* ERRATUM? the masks (or shifts?) on the following statements are switched
 	 *
 	 * protocol is always 0 after the shift (probably wrong)
 	 * firmware holds protocol(?) in its upper nibble (probably not intended)
 	 */
-	p_wpd->wpInfo.protocol = (hidReport[RPT20_PROTO_FW] & 0x0f) >> 4;
-	p_wpd->wpInfo.firmware = (hidReport[RPT20_PROTO_FW] & 0xf0) >> 0;
+	p_wpd->info.protocol = (hidReport[RPT20_PROTO_FW] & 0x0f) >> 4;
+	p_wpd->info.firmware = (hidReport[RPT20_PROTO_FW] & 0xf0) >> 0;
 
-	p_wpd->wpInfo.nearempty = (u8)((hidReport[RPT_BTN0] & 0x80) >> 7);
-	p_wpd->wpInfo.dpd = (hidReport[RPT20_FLAGS] & 0x08) >> 3;
-	p_wpd->wpInfo.speaker = (hidReport[RPT20_FLAGS] & 0x04) >> 2;
+	p_wpd->info.nearempty = (u8)((hidReport[RPT_BTN0] & 0x80) >> 7);
+	p_wpd->info.dpd = (hidReport[RPT20_FLAGS] & 0x08) >> 3;
+	p_wpd->info.speaker = (hidReport[RPT20_FLAGS] & 0x04) >> 2;
 
 	if (p_wpd->devType == WPAD_DEV_BALANCE_CHECKER)
-		p_wpd->wpInfo.battery = p_wpd->blcBattery;
+		p_wpd->info.battery = p_wpd->blcBattery;
 	else if ((u8)hidReport[RPT20_BATTERY] >= 0x55)
-		p_wpd->wpInfo.battery = 4;
+		p_wpd->info.battery = 4;
 	else if ((u8)hidReport[RPT20_BATTERY] >= 0x44)
-		p_wpd->wpInfo.battery = 3;
+		p_wpd->info.battery = 3;
 	else if ((u8)hidReport[RPT20_BATTERY] >= 0x33)
-		p_wpd->wpInfo.battery = 2;
+		p_wpd->info.battery = 2;
 	else if ((u8)hidReport[RPT20_BATTERY] >= 0x03)
-		p_wpd->wpInfo.battery = 1;
+		p_wpd->info.battery = 1;
 	else
-		p_wpd->wpInfo.battery = 0;
+		p_wpd->info.battery = 0;
 
 	WPADExtensionCallback *extCB;
-	if (p_wpd->wpInfo.attach)
+	if (p_wpd->info.attach)
 	{
 		if (!currentlyHasExtension)
 		{
@@ -1560,7 +1566,7 @@ static void __a1_20_status_report(u8 chan, byte_t *hidReport, void *rxBuffer)
 
 		WPADiClearQueue(&p_wpd->extCmdQueue);
 		WPADiSendSetReportType(&p_wpd->extCmdQueue, p_wpd->dataFormat,
-		                       p_wpd->disableContReport, NULL);
+		                       p_wpd->savePower, NULL);
 
 		if (currentlyHasExtension)
 		{
@@ -1573,10 +1579,10 @@ static void __a1_20_status_report(u8 chan, byte_t *hidReport, void *rxBuffer)
 		}
 	}
 
-	if (p_wpd->wpInfoOut)
+	if (p_wpd->infoOut)
 	{
-		memcpy(p_wpd->wpInfoOut, &p_wpd->wpInfo, sizeof *p_wpd->wpInfoOut);
-		p_wpd->wpInfoOut = NULL;
+		memcpy(p_wpd->infoOut, &p_wpd->info, sizeof *p_wpd->infoOut);
+		p_wpd->infoOut = NULL;
 	}
 
 	RETRIEVE_BUTTON_STATE(chan, status, rxBuffer, hidReport);
@@ -1612,7 +1618,7 @@ static void __a1_21_user_data(u8 chan, byte_t *hidReport, void *rxBuffer)
 		if (p_wpd->cmdBlkCB)
 		{
 			if (!p_wpd->extensionCB || p_wpd->extensionCB != p_wpd->cmdBlkCB)
-				(*p_wpd->cmdBlkCB)(chan, WPAD_ERR_3);
+				(*p_wpd->cmdBlkCB)(chan, WPAD_ETRANSFER);
 
 			p_wpd->cmdBlkCB = NULL;
 		}
@@ -1640,7 +1646,7 @@ static void __a1_21_user_data(u8 chan, byte_t *hidReport, void *rxBuffer)
 
 		if (readAddrLow + p_wpd->wmReadLength == addrLow + size)
 		{
-			cbRet = p_wpd->wmReadHadError < 0 ? WPAD_CERR_3 : WPAD_CESUCCESS;
+			cbRet = p_wpd->wmReadHadError < 0 ? WPAD_CETRANSFER : WPAD_CESUCCESS;
 
 			if (readAddrHigh == 0x04a4
 			    && (p_wpd->extState == WPAD_STATE_EXT_ENCRYPTED
@@ -1714,7 +1720,7 @@ static void __a1_22_ack(u8 chan, byte_t *hidReport, void *rxBuffer)
 	u8 ackedID = (u8)hidReport[RPT22_ACKED_RPT_ID];
 	u8 err = (u8)hidReport[RPT22_ERR_CODE];
 
-	WPADResult cbRet = err == 0 ? WPAD_CESUCCESS : WPAD_CERR_3;
+	WPADResult cbRet = err == 0 ? WPAD_CESUCCESS : WPAD_CETRANSFER;
 
 	if (p_wpd->lastReportID == ackedID)
 	{
@@ -2201,7 +2207,7 @@ at_0x44 :  2; // error code 255 if outside the range
 
 	vsStatus[0]->at_0x42 = MAKE_VS_42(data[7], data[15]);
 
-	if (p_wpd->unk_0xbbc < 8)
+	if (p_wpd->currPwmDuty < 8)
 		vsStatus[0]->at_0x44 = 255;
 	else
 		vsStatus[0]->at_0x44 = MAKE_VS_44(data[15]);
@@ -2512,7 +2518,7 @@ static void __parse_ext_data(WPADChannel chan, void *parseBuf,
 			status->err = WPAD_EBADE;
 			p_wpd->noParseExtCount = 3;
 		}
-		else if (!p_wpd->wpInfo.attach)
+		else if (!p_wpd->info.attach)
 		{
 			status->err = WPAD_EBADE;
 			p_wpd->noParseExtCount = 3;
