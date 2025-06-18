@@ -5,6 +5,7 @@
  * headers
  */
 
+#include <macros.h>
 #include <types.h>
 
 #include "WUD.h"
@@ -13,11 +14,14 @@
 #include <revolution/SC/scsystem.h>
 #endif
 
-#include "context_rvl.h"
+#include <context_rvl.h>
 
 /*******************************************************************************
  * macros
  */
+
+#define WPAD_DPD_MAX_X			0x3ff
+#define WPAD_DPD_MAX_Y			0x2ff
 
 #define WPAD_MAX_DPD_OBJECTS	4
 
@@ -39,10 +43,10 @@ enum WPADResult_et
 
 	WPAD_ERR_NO_CONTROLLER	= -1,	/* name known from asserts */
 	WPAD_ERR_BUSY			= -2,	/* name comes from [R89JEL] */
-	WPAD_ERR_TRANSFER		= -3,	/* name comes from [R89JEL] */ // ?
+	WPAD_ERR_TRANSFER		= -3,	/* name comes from [R89JEL] */
 	WPAD_ERR_INVALID		= -4,	/* name comes from [RT3P54] */
-	WPAD_ERR_5				= -5,	/* unknown */
-	WPAD_ERR_6				= -6,	/* unknown */
+	WPAD_ERR_5				= -5,	/* used in WPADMem.c */
+	WPAD_ERR_6				= -6,	/* used in WPADMem.c */
 	WPAD_ERR_CORRUPTED		= -7,	/* name comes from [RT3P54] */
 
 #define WPAD_ESUCCESS	WPAD_ERR_OK
@@ -331,6 +335,11 @@ enum WPADAccGravityUnitType_et
 	WPAD_ACC_GRAVITY_UNIT_FS,
 };
 
+/* re-exposed at this boundary as an opaque type because devs probably would not
+ * have been given the bte headers
+ */
+typedef byte1_t WPADAddress[6];
+
 typedef WUDAllocFunc WPADAllocFunc;
 typedef WUDFreeFunc WPADFreeFunc;
 
@@ -605,12 +614,12 @@ BOOL WPADIsEnabledBLK(void);
 BOOL WPADIsEnabledWBC(void);
 
 // Overridden by the WBC library
-__attribute__((weak)) WPADResult WBCSetupCalibration(void);
-__attribute__((weak)) signed WBCGetCalibrationStatus(void);
-__attribute__((weak)) signed WBCGetBatteryLevel(u8);
-__attribute__((weak)) WPADResult WBCRead(WPADBLStatus *, f64 *, int);
-__attribute__((weak)) WPADResult WBCSetZEROPoint(f64 *, int);
-__attribute__((weak)) WPADResult WBCGetTGCWeight(f64, f64 *, WPADBLStatus *);
+ATTR_WEAK WPADResult WBCSetupCalibration(void);
+ATTR_WEAK signed WBCGetCalibrationStatus(void);
+ATTR_WEAK signed WBCGetBatteryLevel(u8);
+ATTR_WEAK WPADResult WBCRead(WPADBLStatus *, f64 *, int);
+ATTR_WEAK WPADResult WBCSetZEROPoint(f64 *, int);
+ATTR_WEAK WPADResult WBCGetTGCWeight(f64, f64 *, WPADBLStatus *);
 
 void WPADSetDisableChannelImm(u8 afhChannel);
 
@@ -638,7 +647,7 @@ void WPADRegisterAllocator(WPADAllocFunc *alloc, WPADFreeFunc *free);
 u32 WPADGetWorkMemorySize(void);
 WPADLibStatus WPADGetStatus(void);
 u8 WPADGetRadioSensitivity(WPADChannel chan);
-void WPADGetAddress(WPADChannel chan, BD_ADDR_PTR addr);
+void WPADGetAddress(WPADChannel chan, WPADAddress *addr);
 void WPADGetCalibratedDPDObject(DPDObject *dst, DPDObject const *src);
 u8 WPADGetSensorBarPosition(void);
 BOOL WPADSetAcceptConnection(BOOL accept);
@@ -670,6 +679,7 @@ void WPADEnableMotor(BOOL enabled);
 BOOL WPADIsMotorEnabled(void);
 WPADResult WPADControlLed(WPADChannel chan, u8 ledFlags, WPADCallback *cb);
 BOOL WPADSaveConfig(SCFlushCallback *cb);
+
 /* NOTE: status should match the WPADStatus type for the channel; a check
  * against the currently assigned device type is made to know how much to copy
  *
@@ -677,6 +687,7 @@ BOOL WPADSaveConfig(SCFlushCallback *cb);
  * pointer to WPADCLStatus cast to a pointer to WPADStatus
  */
 void WPADRead(WPADChannel chan, WPADStatus *status);
+
 void WPADSetAutoSamplingBuf(WPADChannel chan, void *buf, u32 length);
 int WPADGetLatestIndexInBuf(WPADChannel chan);
 BOOL WPADIsSpeakerEnabled(WPADChannel chan);

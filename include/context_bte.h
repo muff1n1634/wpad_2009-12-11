@@ -7,7 +7,7 @@
  * compile.
  *
  * This is not the full context; the other half of the context is in
- * "context_rvl.h".
+ * <context_rvl.h>.
  *
  * Most of this code is copyright (C) 2003-2012 Broadcom Corporation under the
  * Apache 2.0 License <http://www.apache.org/licenses/LICENSE-2.0>. The original

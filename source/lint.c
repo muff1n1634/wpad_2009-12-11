@@ -5,10 +5,10 @@
  * headers
  */
 
-#include <macros.h> // ATTR_UNUSED
-
 #include <limits.h>
-#include <string.h> // memset
+#include <string.h>
+
+#include <macros.h> // ATTR_UNUSED
 
 /*******************************************************************************
  * macros
@@ -269,8 +269,8 @@ void LINTMod(ULONG *dst, ULONG *lhs, ULONG *rhs)
 	int i;
 
 	// force of habit, i'm sure
-	ULONG lhsSize __attribute__((unused)) = LINTGetSize(lhs);
-	ULONG rhsSize __attribute__((unused)) = LINTGetSize(rhs);
+	ULONG lhsSize ATTR_UNUSED = LINTGetSize(lhs);
+	ULONG rhsSize ATTR_UNUSED = LINTGetSize(rhs);
 
 	ULONG tmpLint[LINT_NUM_MAX_BUFSIZ];
 

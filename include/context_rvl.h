@@ -1,16 +1,16 @@
 #ifndef CONTEXT_RVL_H
 #define CONTEXT_RVL_H
 
-#include <macros.h> // ROUND_UP
+#include <macros.h>
 #include <types.h>
 
-#include "context_bte.h"
+#include <context_bte.h>
 
 /* Contains the context of the other Revolution SDK libraries that the WPAD
  * library needs to compile.
  *
  * This is not the full context; the other half of the context is in
- * "context_bte.h".
+ * <context_bte.h>.
  *
  * Ideally, this file's usages should be replaced with the headers in your
  * project that declare these symbols.
@@ -54,8 +54,8 @@ enum OSAppType_et
 extern BOOL __OSInIPL;
 extern OSTime __OSStartTime;
 
-void OSRegisterVersion(const char *version);
-const char *OSGetAppGamename(void);
+void OSRegisterVersion(char const *version);
+char const *OSGetAppGamename(void);
 OSAppType OSGetAppType(void);
 
 #if defined(NDEBUG)
@@ -86,7 +86,7 @@ struct OSAlarm
 	OSTime			period;		// size 0x08, offset 0x18
 	OSTime			start;		// size 0x08, offset 0x20
 	void			*userData;	// size 0x04, offset 0x28
-	// 4 bytes padding
+	/* 4 bytes padding */
 }; // size 0x30
 
 void OSCreateAlarm(OSAlarm *alarm);
@@ -94,7 +94,7 @@ void OSSetPeriodicAlarm(OSAlarm *alarm, OSTime tick, OSTime period,
                         OSAlarmHandler handler);
 void OSCancelAlarm(OSAlarm *alarm);
 
-void DCInvalidateRange(const void *buf, u32 len);
+void DCInvalidateRange(void const *buf, u32 len);
 
 typedef void OSFiber(/* unspecified */);
 
@@ -121,11 +121,10 @@ struct OSContext
 void OSSwitchFiberEx(register_t arg0, register_t arg1, register_t arg2,
                      register_t arg3, OSFiber *fiber, void *stack);
 
-u32 OSCalcCRC32(const void *data, u32 length);
+byte4_t OSCalcCRC32(void const *data, u32 length);
 
-__attribute__((weak)) void OSReport(const char *msg, ...);
-__attribute__((weak)) void OSPanic(const char *file, int line,
-                                   const char *msg, ...);
+ATTR_WEAK void OSReport(char const *msg, ...);
+ATTR_WEAK void OSPanic(char const *file, int line, char const *msg, ...);
 
 BOOL OSDisableInterrupts(void);
 BOOL OSRestoreInterrupts(BOOL status);
@@ -143,13 +142,13 @@ typedef int OSShutdownPass;
 enum OSShutdownPass_et
 {
 	OS_SHUTDOWN_PASS_FIRST,
-	OS_SHUTDOWN_PASS_SECOND
+	OS_SHUTDOWN_PASS_SECOND,
 };
 
 typedef u32 OSShutdownEvent;
 enum OSShutdownEvent_et
 {
-	OS_SHUTDOWN_EVENT_FATAL, // seems to be used by OSFatal
+	OS_SHUTDOWN_EVENT_FATAL,
 	OS_SHUTDOWN_EVENT_1,
 	OS_SHUTDOWN_EVENT_SHUTDOWN,
 	OS_SHUTDOWN_EVENT_3,
@@ -181,21 +180,21 @@ void OSRegisterShutdownFunction(OSShutdownFunctionInfo *info);
 
 typedef struct OSThread OSThread;
 
-enum OSThreadState
+typedef enum OSThreadState
 {
 	OS_THREAD_STATE_EXITED		= 0,
-	OS_THREAD_STATE_READY		= (1 << 0),
-	OS_THREAD_STATE_RUNNING		= (1 << 1),
-	OS_THREAD_STATE_SLEEPING	= (1 << 2),
-	OS_THREAD_STATE_MORIBUND	= (1 << 3),
-} typedef OSThreadState;
+	OS_THREAD_STATE_READY		= 1 << 0,
+	OS_THREAD_STATE_RUNNING		= 1 << 1,
+	OS_THREAD_STATE_SLEEPING	= 1 << 2,
+	OS_THREAD_STATE_MORIBUND	= 1 << 3,
+} OSThreadState;
 
 typedef u16 OSThreadFlags;
 enum OSThreadFlags_et
 {
 	OS_THREAD_NO_FLAGS	= 0,
 
-	OS_THREAD_DETACHED	= (1 << 0),
+	OS_THREAD_DETACHED	= 1 << 0,
 };
 
 typedef void OSSwitchThreadCallback(OSThread *curThread, OSThread *newThread);
@@ -279,7 +278,7 @@ OSTime OSGetTime(void);
 OSTick OSGetTick(void);
 OSTime __OSGetSystemTime(void);
 
-// TODO: is there a way to make this with an object with address declaration?
+// TODO: is there a way to make this work with an object with address declaration?
 #define CURRENT_AFH_CHANNEL_PHYSICAL_ADDR ((void *)(0x31a2))
 
 // IPC
@@ -298,7 +297,7 @@ inline void ACRWriteReg(u32 reg, u32 val)
 
 // NAND
 
-#define FS_MAX_PATH 64
+#define FS_MAX_PATH	64
 
 typedef s32 NANDResult;
 enum NANDResult_et
@@ -374,7 +373,7 @@ struct NANDCommandBlock
 	u16			ownerId;				// size 0x02, offset 0x18
 	u16			groupId;				// size 0x02, offset 0x1a
 	u8			nextStage;				// size 0x01, offset 0x1c
-	// 3 bytes padding
+	/* 3 bytes padding */
 	u32			attr;					// size 0x04, offset 0x20
 	u32			ownerAcc;				// size 0x04, offset 0x24
 	u32			groupAcc;				// size 0x04, offset 0x28
@@ -397,22 +396,21 @@ struct NANDCommandBlock
 	u32			userInodes;				// size 0x04, offset 0xa8
 	u32			workBlocks;				// size 0x04, offset 0xac
 	u32			workInodes;				// size 0x04, offset 0xb0
-	const char	**dir;					// size 0x04, offset 0xb4
+	char		const **dir;			// size 0x04, offset 0xb4
 	int			simpleFlag;				// size 0x04, offset 0xb8
 }; // size 0xbc
 
 NANDResult NANDReadAsync(NANDFileInfo *info, void *buf, u32 len,
                          NANDAsyncCallback *callback, NANDCommandBlock *block);
-NANDResult NANDWriteAsync(NANDFileInfo *info, const void *buf, u32 len,
+NANDResult NANDWriteAsync(NANDFileInfo *info, void const *buf, u32 len,
                           NANDAsyncCallback *callback, NANDCommandBlock *block);
 NANDResult NANDSeekAsync(NANDFileInfo *info, s32 offset, NANDSeekMode whence,
                          NANDAsyncCallback *callback, NANDCommandBlock *block);
 
 NANDResult NANDInit(void);
 
-NANDResult NANDOpenAsync(const char *path, NANDFileInfo *info,
-                         NANDOpenMode mode, NANDAsyncCallback *callback,
-                         NANDCommandBlock *block);
+NANDResult NANDOpenAsync(char const *path, NANDFileInfo *info, NANDOpenMode mode,
+                         NANDAsyncCallback *callback, NANDCommandBlock *block);
 NANDResult NANDCloseAsync(NANDFileInfo *info, NANDAsyncCallback *callback,
                           NANDCommandBlock *block);
 
@@ -438,7 +436,7 @@ typedef u8 SCSensorBarPos;
 enum SCSensorBarPos_et
 {
 	SC_SENSOR_BAR_BOTTOM,
-	SC_SENSOR_BAR_TOP
+	SC_SENSOR_BAR_TOP,
 };
 
 typedef struct SCBtDeviceInfo // basic dev info?
@@ -479,9 +477,9 @@ typedef struct SCBtCmpDevInfoArray
 } SCBtCmpDevInfoArray; // size 0x205
 
 void SCGetBtDeviceInfoArray(SCBtDeviceInfoArray *array);
-BOOL SCSetBtDeviceInfoArray(const SCBtDeviceInfoArray *array);
+BOOL SCSetBtDeviceInfoArray(SCBtDeviceInfoArray const *array);
 void SCGetBtCmpDevInfoArray(SCBtCmpDevInfoArray *array);
-BOOL SCSetBtCmpDevInfoArray(const SCBtCmpDevInfoArray *array);
+BOOL SCSetBtCmpDevInfoArray(SCBtCmpDevInfoArray const *array);
 u32 SCGetBtDpdSensibility(void);
 BOOL SCSetBtDpdSensibility(u8 sens);
 u8 SCGetWpadMotorMode(void);

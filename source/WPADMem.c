@@ -15,9 +15,9 @@
 
 #if 0
 #include <revolution/OS/OSInterrupt.h>
-#endif
-
+#else
 #include <context_rvl.h>
+#endif
 
 /*******************************************************************************
  * macros
@@ -135,12 +135,12 @@ static void __wpadWriteGameDataSub(WPADChannel chan, WPADResult result_)
 
 	u16 blockLen;
 
-	if (p_wpd->unk_0x038[1] == 0)
-		p_wpd->unk_0x038[1] = result == WPAD_ESUCCESS ? 0 : -3;
+	if (p_wpd->at_0x038[1] == 0)
+		p_wpd->at_0x038[1] = result == WPAD_ESUCCESS ? 0 : -3;
 
 	if (result == WPAD_ESUCCESS)
 	{
-		if (p_wpd->unk_0x038[0] == 0 || p_wpd->unk_0x038[1] == 0)
+		if (p_wpd->at_0x038[0] == 0 || p_wpd->at_0x038[1] == 0)
 		{
 			blockLen = MIN(MAX_BLOCK_LENGTH, p_wpd->memBlock.len);
 
@@ -167,16 +167,16 @@ static void __wpadWriteCheck1(WPADChannel chan, WPADResult result)
 {
 	wpad_cb_st *p_wpd = __rvl_p_wpadcb[chan];
 
-	if (p_wpd->unk_0x038[0] == 0)
-		p_wpd->unk_0x038[0] = result == WPAD_ESUCCESS ? 0 : -3;
+	if (p_wpd->at_0x038[0] == 0)
+		p_wpd->at_0x038[0] = result == WPAD_ESUCCESS ? 0 : -3;
 }
 
 static void __wpadWriteCheck2(WPADChannel chan, WPADResult result)
 {
 	wpad_cb_st *p_wpd = __rvl_p_wpadcb[chan];
 
-	if (p_wpd->unk_0x038[1] == 0)
-		p_wpd->unk_0x038[1] = result == WPAD_ESUCCESS ? 0 : -3;
+	if (p_wpd->at_0x038[1] == 0)
+		p_wpd->at_0x038[1] = result == WPAD_ESUCCESS ? 0 : -3;
 }
 
 WPADResult WPADWriteGameData(WPADChannel chan, void const *data, u16 len,
@@ -247,8 +247,8 @@ WPADResult WPADWriteGameData(WPADChannel chan, void const *data, u16 len,
 
 		gameInfo->checksum += 0x55;
 
-		p_wpd->unk_0x038[0] = 0;
-		p_wpd->unk_0x038[1] = 0;
+		p_wpd->at_0x038[0] = 0;
+		p_wpd->at_0x038[1] = 0;
 
 		addrBase = WPAD_USERAREA_LO;
 
@@ -369,7 +369,7 @@ WPADResult WPADReadGameData(WPADChannel chan, void *data, u16 len, u16 addr,
 
 	if (!p_wpd->memBlock.busy)
 	{
-		result = p_wpd->unk_0x038[0] == 0 || p_wpd->unk_0x038[1] == 0
+		result = p_wpd->at_0x038[0] == 0 || p_wpd->at_0x038[1] == 0
 		           ? WPAD_CESUCCESS
 		           : WPAD_CE6;
 
@@ -549,7 +549,7 @@ WPADResult WPADGetGameDataTimeStamp(WPADChannel chan, OSTime *time)
 
 	BOOL intrStatus = OSDisableInterrupts();
 
-	result = p_wpd->unk_0x038[0] == 0 || p_wpd->unk_0x038[1] == 0 ? WPAD_CESUCCESS
+	result = p_wpd->at_0x038[0] == 0 || p_wpd->at_0x038[1] == 0 ? WPAD_CESUCCESS
 	                                                            : WPAD_CEINVAL;
 
 	if (result == WPAD_ESUCCESS)
@@ -568,7 +568,7 @@ WPADResult WPADGetGameTitleUtf16(WPADChannel chan, u16 **title)
 
 	BOOL intrStatus = OSDisableInterrupts();
 
-	result = p_wpd->unk_0x038[0] == 0 || p_wpd->unk_0x038[1] == 0 ? WPAD_CESUCCESS
+	result = p_wpd->at_0x038[0] == 0 || p_wpd->at_0x038[1] == 0 ? WPAD_CESUCCESS
 	                                                            : WPAD_CEINVAL;
 
 	if (result == WPAD_ESUCCESS)

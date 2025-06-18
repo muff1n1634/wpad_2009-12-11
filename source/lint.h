@@ -37,14 +37,15 @@ typedef unsigned long ULONG;
 // returns ULONG *
 #define LINTNextElement(lint_, index_)	((lint_) + (index_) + 1)
 
-int LINTCmp(ULONG *lhs, ULONG const *rhs);
+int LINTCmp(ULONG const *lhs, ULONG const *rhs);
 void LINTLshift(ULONG *dst, ULONG const *src, ULONG shift);
 int LINTMsb(ULONG const *num);
-void LINTAdd(ULONG *dst, ULONG *lhs, ULONG *rhs);
-void LINTSub(ULONG *dst, ULONG *lhs, ULONG const *rhs);
-void LINTMul(ULONG *dst, ULONG *lhs, ULONG const *rhs);
-void LINTMod(ULONG *dst, ULONG *lhs, ULONG *rhs);
-void LINTAddMod(ULONG *dst, ULONG *add1, ULONG *add2, ULONG *mod);
+void LINTAdd(ULONG *dst, ULONG const *lhs, ULONG const *rhs);
+void LINTSub(ULONG *dst, ULONG const *lhs, ULONG const *rhs);
+void LINTMul(ULONG *dst, ULONG const *lhs, ULONG const *rhs);
+void LINTMod(ULONG *dst, ULONG const *lhs, ULONG const *rhs);
+void LINTAddMod(ULONG *dst, ULONG const *add1, ULONG const *add2,
+                ULONG const *mod);
 
 #ifdef __cplusplus
 	}

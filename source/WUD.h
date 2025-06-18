@@ -13,10 +13,11 @@
 
 #if 0
 #include <revolution/OS/OSAlarm.h> // OSAlarm
+#else
+#include <context_rvl.h>
 #endif
 
-#include "context_bte.h"
-#include "context_rvl.h" // OSAlarm
+#include <context_bte.h>
 
 /*******************************************************************************
  * macros
@@ -202,7 +203,7 @@ typedef struct /* possibly untagged, like kpad */
 	u8						siPortStatus;						// size 0x001, offset 0x709
 	UINT8					pmID;								// size 0x001, offset 0x70a
 	s8						syncRssi;							// size 0x001, offset 0x70b
-	byte_t					pad0_[4]; // alignment?
+	/* 4 bytes padding */
 	OSAlarm					alarm;								// size 0x030, offset 0x710
 	byte4_t					hhFlags;							// size 0x004, offset 0x740	// some flags maybe?
 
@@ -213,7 +214,7 @@ typedef struct /* possibly untagged, like kpad */
 	s8						initWaitDeviceUpFrames;				// size 0x001, offset 0x748
 	s8						waitStartSearchFrames;				// size 0x001, offset 0x749
 	s16						waitIncomingFrames;					// size 0x002, offset 0x74a
-	byte_t					pad1_[4]; // alignment?
+	/* 4 bytes padding */
 } wud_cb_st; // size 0x750
 
 /*******************************************************************************
@@ -258,7 +259,6 @@ void _WUDSetBTETraceLevel(UINT8 traceLevel);
 
 BOOL _WUDConnect(BD_ADDR_PTR addr, UINT8 *key, char *name);
 WUDDevInfo *WUDiGetDiscoverDevice(void);
-
 
 void WUDiSetDevAddrForHandle(UINT8 dev_handle, BD_ADDR dev_addr);
 BD_ADDR_PTR WUDiGetDevAddrForHandle(UINT8 dev_handle);

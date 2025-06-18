@@ -5,9 +5,10 @@
  * headers
  */
 
+#include <decomp.h>
 #include <types.h>
 
-#include "context_bte.h"
+#include <context_bte.h>
 
 /*******************************************************************************
  * macros
@@ -58,7 +59,7 @@ enum WUDSyncType_et
 	WUD_SYNC_TYPE_SIMPLE,
 };
 
-typedef void *WUDAllocFunc(size_t size);
+typedef void *WUDAllocFunc(u32 size);
 typedef int WUDFreeFunc(void *ptr); // signature from petari. not sure what the int is, though
 
 typedef void WUDSyncDeviceCallback(s32 result, s32 num); // what is result?
@@ -77,10 +78,10 @@ struct WUDDevInfo
 	UINT8					subclass;	// size 0x01, offset 0x57
 	UINT8					appID;		// size 0x01, offset 0x58
 	u8						at_0x59;	// size 0x01, offset 0x59
-	char signed				at_0x5a;	// size 0x01, offset 0x5a	/* unknown */
+	unk1_t					at_0x5a;	// size 0x01, offset 0x5a	/* unknown */
 	u8						at_0x5b;	// size 0x01, offset 0x5b
 	u8						at_0x5c;	// size 0x01, offset 0x5c
-	byte_t					unk_0x5d[1]; // padding?
+	byte_t					at_0x5d[1]; // padding?
 	tBTA_HH_ATTR_MASK		hhAttrMask;	// size 0x02, offset 0x5e
 }; // size 0x60
 

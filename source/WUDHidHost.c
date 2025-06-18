@@ -4,16 +4,18 @@
  * headers
  */
 
+#include <macros.h> // ATTR_UNUSED
 #include <types.h>
 
 #include "WUD.h"
 
 #if 0
 #include <revolution/OS/OSAssert.h>
+#else
+#include <context_rvl.h>
 #endif
 
-#include "context_bte.h"
-#include "context_rvl.h"
+#include <context_bte.h>
 
 /*******************************************************************************
  * macros
@@ -94,9 +96,10 @@ void WUDiHidHostEventCallback(tBTA_HH_EVT event, tBTA_HH *p_data)
 			p_info->at_0x59 = 8;
 			p_info->devHandle = p_conn->handle;
 
-			p_wcb->connectedNum++;
+			++p_wcb->connectedNum;
 
-			OSAssert_Line(220, p_conn->handle >= 0 && p_conn->handle < WUD_MAX_DEV_ENTRY);
+			OSAssert_Line(220, p_conn->handle >= 0
+				&& p_conn->handle < WUD_MAX_DEV_ENTRY);
 
 			p_info = WUDiGetDevInfo(p_conn->bda);
 			if (!p_info)
@@ -114,7 +117,7 @@ void WUDiHidHostEventCallback(tBTA_HH_EVT event, tBTA_HH *p_data)
 			WUDSetSniffMode(p_info->devAddr, 8);
 
 			if (p_wcb->hidConnCB)
-				(*p_wcb->hidConnCB)(p_info, TRUE);
+				(*p_wcb->hidConnCB)(p_info, true);
 		}
 		else
 		{
@@ -128,7 +131,7 @@ void WUDiHidHostEventCallback(tBTA_HH_EVT event, tBTA_HH *p_data)
 					    && p_conn->status == BTA_HH_ERR_AUTH_FAILED)
 					{
 						WUDiRemoveDevice(p_conn->bda);
-						p_wcb->linkedNum--;
+						--p_wcb->linkedNum;
 					}
 
 					p_wcb->syncState = WUD_STATE_ERROR;
@@ -149,7 +152,7 @@ void WUDiHidHostEventCallback(tBTA_HH_EVT event, tBTA_HH *p_data)
 					}
 
 					WUDiRemoveDevice(p_conn->bda);
-					p_wcb->linkedNum--;
+					--p_wcb->linkedNum;
 				}
 			}
 		}
@@ -158,7 +161,7 @@ void WUDiHidHostEventCallback(tBTA_HH_EVT event, tBTA_HH *p_data)
 	case BTA_HH_CLOSE_EVT:
 		p_cb = &p_data->dev_status;
 
-		p_wcb->connectedNum--;
+		--p_wcb->connectedNum;
 
 		OSAssert_Line(305, p_cb->handle >= 0 && p_cb->handle < WUD_MAX_DEV_ENTRY);
 
@@ -171,12 +174,12 @@ void WUDiHidHostEventCallback(tBTA_HH_EVT event, tBTA_HH *p_data)
 				WUDiMoveTopOfDisconnectedStdDevice(p_info);
 		}
 
-		WUDiSetDevAddrForHandle(p_cb->handle, NULL);
+		WUDiSetDevAddrForHandle(p_cb->handle, nullptr);
 		WUDiSetQueueSizeForHandle(p_cb->handle, 0);
 		WUDiSetNotAckNumForHandle(p_cb->handle, 0);
 
 		if (p_wcb->hidConnCB)
-			(*p_wcb->hidConnCB)(p_info, FALSE);
+			(*p_wcb->hidConnCB)(p_info, false);
 
 		break;
 
@@ -209,7 +212,7 @@ void WUDiHidHostEventCallback(tBTA_HH_EVT event, tBTA_HH *p_data)
 			p_wcb->linkedNum = p_hh_e15->at_0x04;
 		}
 
-		for (i = 0; i < p_hh_e15->at_0x04; i++)
+		for (i = 0; i < p_hh_e15->at_0x04; ++i)
 		{
 			if (p_hh_e15->at_0x06[i].handle < WUD_MAX_DEV_ENTRY)
 			{
@@ -225,8 +228,8 @@ void WUDiHidHostEventCallback(tBTA_HH_EVT event, tBTA_HH *p_data)
 }
 
 extern void bta_hh_co_data(UINT8 dev_handle, UINT8 *p_rpt, UINT16 len,
-                           tBTA_HH_PROTO_MODE mode __attribute__((unused)),
-                           UINT8 sub_class __attribute__((unused)),
+                           tBTA_HH_PROTO_MODE mode ATTR_UNUSED,
+                           UINT8 sub_class ATTR_UNUSED,
                            UINT8 app_id)
 {
 	wud_cb_st *p_wcb = &__rvl_wudcb;
@@ -235,28 +238,28 @@ extern void bta_hh_co_data(UINT8 dev_handle, UINT8 *p_rpt, UINT16 len,
 		(*p_wcb->hidRecvCB)(dev_handle, p_rpt, len);
 }
 
-extern void bta_hh_co_open(UINT8 dev_handle __attribute__((unused)),
-                           UINT8 sub_class __attribute__((unused)),
-                           UINT16 attr_mask __attribute__((unused)),
-                           UINT8 app_id __attribute__((unused)))
+extern void bta_hh_co_open(UINT8 dev_handle ATTR_UNUSED,
+                           UINT8 sub_class ATTR_UNUSED,
+                           UINT16 attr_mask ATTR_UNUSED,
+                           UINT8 app_id ATTR_UNUSED)
 {
-	return;
+	/* ... */
 }
 
-extern void bta_hh_co_close(UINT8 dev_handle __attribute__((unused)),
-                            UINT8 app_id __attribute__((unused)))
+extern void bta_hh_co_close(UINT8 dev_handle ATTR_UNUSED,
+                            UINT8 app_id ATTR_UNUSED)
 {
-	return;
+	/* ... */
 }
 
 extern BOOLEAN bta_dm_co_get_compress_memory(tBTA_SYS_ID id
-                                             __attribute__((unused)),
+                                             ATTR_UNUSED,
                                              UINT8 **memory_p
-                                             __attribute__((unused)),
+                                             ATTR_UNUSED,
                                              UINT32 *memory_size
-                                             __attribute__((unused)))
+                                             ATTR_UNUSED)
 {
-	BOOLEAN ret = FALSE;
+	BOOLEAN ret = false;
 
 	return ret;
 }

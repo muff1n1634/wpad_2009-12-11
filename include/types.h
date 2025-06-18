@@ -6,8 +6,10 @@
 
 // NULL
 
+#define nullptr			0
+
 #undef NULL
-#define NULL			0
+#define NULL			nullptr
 
 // Fixed-width types
 
@@ -29,8 +31,11 @@ typedef double			f64;
 // Booleans
 
 typedef int				BOOL;
-#define TRUE			1
-#define FALSE			0
+#define true			1
+#define false			0
+
+#define TRUE			true
+#define FALSE			false
 
 // Byte types
 

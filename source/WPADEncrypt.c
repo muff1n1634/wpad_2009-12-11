@@ -14,9 +14,9 @@
 #if 0
 #include <revolution/OS/OSInterrupt.h>
 #include <revolution/OS/OSTime.h>
+#else
+#include <context_rvl.h>
 #endif
-
-#include "context_rvl.h"
 
 /*******************************************************************************
  * local function declarations
@@ -884,7 +884,7 @@ void WPADiCreateKey(WPADChannel chan)
 	byte_t key1[10], key2[6];
 
 	u8 i;
-	for (i = 0; i < (int)ARRAY_LENGTH(key1); i++)
+	for (i = 0; i < (int)ARRAY_LENGTH(key1); ++i)
 		key1[i] = tb[random()];
 
 	BOOL intrStatus = OSDisableInterrupts();
@@ -916,13 +916,13 @@ void WPADiCreateKey(WPADChannel chan)
 	// NOTE: switch from key2 to key1 for these last two
 	xorTable[6] = tb[key1[3] + ((numRand + 1) << 8)] ^ tb[key1[5] + ((numRand + 2) << 8)];
 	xorTable[7] = tb[key1[2] + ((numRand + 1) << 8)] ^ tb[key1[6] + ((numRand + 2) << 8)];
+
+	for (i = 0; i < (int)ARRAY_LENGTH(key1); ++i)
+		p_wpd->encryptionKey[i] = key1[(ARRAY_LENGTH(key1) - 1) - i];
+
+	for (i = 0; i < (int)ARRAY_LENGTH(key2); ++i)
+		p_wpd->encryptionKey[ARRAY_LENGTH(key1) + i] = key2[(ARRAY_LENGTH(key2) - 1) - i];
 	// clang-format on
-
-	for (i = 0; i < (int)ARRAY_LENGTH(key1); i++)
-		p_wpd->encryptionKey[i] = key1[9 - i];
-
-	for (i = 0; i < (int)ARRAY_LENGTH(key2); i++)
-		p_wpd->encryptionKey[(int)ARRAY_LENGTH(key1) + i] = key2[5 - i];
 
 	memcpy(p_wpd->decryptAddTable, addTable, sizeof p_wpd->decryptAddTable);
 	memcpy(p_wpd->decryptXorTable, xorTable, sizeof p_wpd->decryptXorTable);
@@ -946,7 +946,7 @@ void WPADiCreateKeyFor3rd(WPADChannel chan)
 	byte_t key1[10], key2[6];
 
 	u8 i;
-	for (i = 0; i < (int)ARRAY_LENGTH(key1); i++)
+	for (i = 0; i < (int)ARRAY_LENGTH(key1); ++i)
 		key1[i] = tb3[random()];
 
 	BOOL intrStatus = OSDisableInterrupts();
@@ -980,13 +980,13 @@ void WPADiCreateKeyFor3rd(WPADChannel chan)
 	// NOTE: switch from key2 to key1 for these last two
 	xorTable[6] = tb3[key1[3] + ((numRand + 1) << 8)] ^ tb3[key1[5] + ((numRand + 2) << 8)];
 	xorTable[7] = tb3[key1[2] + ((numRand + 1) << 8)] ^ tb3[key1[6] + ((numRand + 2) << 8)];
+
+	for (i = 0; i < (int)ARRAY_LENGTH(key1); ++i)
+		p_wpd->encryptionKey[i] = key1[(ARRAY_LENGTH(key1) - 1) - i];
+
+	for (i = 0; i < (int)ARRAY_LENGTH(key2); ++i)
+		p_wpd->encryptionKey[ARRAY_LENGTH(key1) + i] = key2[(ARRAY_LENGTH(key2) - 1) - i];
 	// clang-format on
-
-	for (i = 0; i < (int)ARRAY_LENGTH(key1); i++)
-		p_wpd->encryptionKey[i] = key1[9 - i];
-
-	for (i = 0; i < (int)ARRAY_LENGTH(key2); i++)
-		p_wpd->encryptionKey[(int)ARRAY_LENGTH(key1) + i] = key2[5 - i];
 
 	memcpy(p_wpd->decryptAddTable, addTable, sizeof p_wpd->decryptAddTable);
 	memcpy(p_wpd->decryptXorTable, xorTable, sizeof p_wpd->decryptXorTable);
@@ -1007,7 +1007,7 @@ void WPADiDecode(WPADChannel chan, byte_t *data, u16 length, u16 startIndex)
 	{
 		buffer = data;
 
-		for (i = 0; i < length; i++)
+		for (i = 0; i < length; ++i)
 		{
 			tableIndex = (startIndex + i) % 8;
 			buffer[i] = p_wpd->decryptAddTable[tableIndex]

@@ -11,7 +11,11 @@
 
 #include <revolution/WPAD/WPAD.h>
 
+#if 0
+#include <revolution/OS/OSAssert.h>
+#else
 #include "context_rvl.h"
+#endif
 
 /*******************************************************************************
  * macros

@@ -13,7 +13,7 @@
 #include <revolution/OS/OSTime.h>
 #endif
 
-#include "context_rvl.h"
+#include <context_rvl.h>
 
 /*******************************************************************************
  * macros
