@@ -1,8 +1,14 @@
 # Revolution SDK WPAD library decompilation (Dec. 11, 2009)
+---
+
+> [!NOTE]
+> The code in this repository has been migrated to [`muff1n1634/sdk_2009-12-11`](https://github.com/muff1n1634/sdk_2009-12-11), where future work of decompiling the rest of the SDK will occur. As a result, this repository has now been archived.
+
+---
 
 This repository contains a (mostly) matching decompilation of the WPAD library in the Revolution SDK, timestamped `Dec 11 2009`.
 
-Matches are against the debug and release objects present in the files of  [`[SC5PGN]`](https://wiki.dolphin-emu.org/index.php?title=SC5PGN) *Challenge Me: Word Puzzles*. Struct definitions for the external API come from DWARF info from debug binaries from [`[SPQE7T]`](https://wiki.dolphin-emu.org/index.php?title=SPQE7T) *I Spy: Spooky Mansion* and  [`[SGLEA4]`](https://wiki.dolphin-emu.org/index.php?title=SGLEA4) *Gormiti: The Lords of Nature!*, as well as other sources listed where referenced. Internal structures within the library did not have such DWARF info, and some names might (will be) inaccurate as a result.
+Matches are against the debug and release objects present in the files of [`[SC5PGN]`](https://wiki.dolphin-emu.org/index.php?title=SC5PGN) *Challenge Me: Word Puzzles*. Struct definitions for the external API come from DWARF info from debug binaries from [`[SPQE7T]`](https://wiki.dolphin-emu.org/index.php?title=SPQE7T) *I Spy: Spooky Mansion* and  [`[SGLEA4]`](https://wiki.dolphin-emu.org/index.php?title=SGLEA4) *Gormiti: The Lords of Nature!*, as well as other sources listed where referenced. Internal structures within the library did not have such DWARF info, and some names might (will be) inaccurate as a result.
 
 These objects contain every function in the library as provided to developers. They do not contain uncompiled code, such as blocks of code that were `/* comment */`ed or `#ifdef`'d out at compile time. Because of this, the usage of some code is still unknown, and likely will be forever.
 
