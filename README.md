@@ -2,7 +2,7 @@
 ---
 
 > [!NOTE]
-> The code in this repository has been migrated to [`muff1n1634/sdk_2009-12-11`](https://github.com/muff1n1634/sdk_2009-12-11), where future work of decompiling the rest of the SDK will occur. As a result, this repository has now been archived.
+> The code in this repository has been migrated to [`muff1n1634/sdk_2009-12-11`](https://github.com/doldecomp/sdk_2009-12-11), where future work of decompiling the rest of the SDK will occur. As a result, this repository has now been archived.
 
 ---
 
